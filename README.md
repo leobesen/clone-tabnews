@@ -19,14 +19,11 @@ TabNews é uma plataforma de compartilhamento de notícias focada em conteúdo t
 ```
 clone-tabnews/
 ├── models/              # Lógica de negócio
-│   └── calculadora.js
 ├── pages/               # Páginas e rotas Next.js
 │   ├── index.js         # Página inicial
 │   └── api/             # Rotas de API
 │       └── status.js    # Endpoint de status
 ├── tests/               # Testes automatizados
-│   ├── unit/            # Testes unitários
-│   │   └── calculadora.test.js
 │   └── integration/     # Testes de integração
 ├── package.json
 └── README.md
@@ -90,7 +87,6 @@ npm run test:watch
 ```
 
 Os testes estão organizados em:
-- **unit/**: Testes unitários para funções e componentes isolados
 - **integration/**: Testes de integração entre múltiplos componentes
 
 ## 📝 Formatação de Código
@@ -121,7 +117,7 @@ Retorna o status da aplicação.
 
 ## 📄 Licença
 
-MIT - veja [LICENSE](LICENSE) para mais detalhes.
+MIT
 
 ## 👨‍💻 Autor
 
