@@ -23,8 +23,8 @@ async function getPGMaxConnections() {
   return res.rows[0].max_connections;
 }
 
-async function getPGCurrentUsedConnections() {
-  const res = await query("SELECT count(*) FROM pg_stat_activity;");
+async function getPGOpenedConnections() {
+  const res = await query("SELECT count(*)::int FROM pg_stat_activity WHERE datname = 'local_db';");
   return res.rows[0].count;
 }
 
@@ -32,5 +32,5 @@ export default {
   query,
   getPGVersion,
   getPGMaxConnections,
-  getPGCurrentUsedConnections,
+  getPGOpenedConnections,
 };
