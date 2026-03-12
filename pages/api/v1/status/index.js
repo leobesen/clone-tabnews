@@ -14,8 +14,8 @@ async function status(request, response) {
     dependencies: {
       database: {
         version: pgVersion,
-        max_connections: pgMaxConnections,
-        connections_used: pgCurrentUsedConnections,
+        max_connections: parseInt(pgMaxConnections, 10),
+        connections_used: parseInt(pgCurrentUsedConnections, 10),
       },
     },
   });
