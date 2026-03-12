@@ -1,11 +1,23 @@
-import database from 'infra/database.js';
+import database from "infra/database.js";
 
 async function status(request, response) {
-  const res = await database.query('SELECT 1 + 1;');
-  console.log('Database response: ', res)
+  const updatedAt = new Date().toISOString();
+  const pgVersion = await database.getPGVersion();
+  const pgMaxConnections = await database.getPGMaxConnections();
+  const pgCurrentUsedConnections = await database.getPGCurrentUsedConnections();
+
+  console.log("PostgreSQL Version:", pgVersion);
+  console.log("PostgreSQL Max Connections:", pgMaxConnections);
+  console.log("PostgreSQL Current Used Connections:", pgCurrentUsedConnections);
   response.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
+    updated_at: updatedAt,
+    dependencies: {
+      database: {
+        version: pgVersion,
+        max_connections: pgMaxConnections,
+        connections_used: pgCurrentUsedConnections,
+      },
+    },
   });
 }
 
