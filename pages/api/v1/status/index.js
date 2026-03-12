@@ -4,7 +4,10 @@ async function status(request, response) {
   const updatedAt = new Date().toISOString();
   const pgVersion = await database.getPGVersion();
   const pgMaxConnections = await database.getPGMaxConnections();
-  const pgCurrentUsedConnections = await database.getPGOpenedConnections();
+
+  const databaseName = request.query.database || process.env.POSTGRES_DB;
+
+  const pgCurrentUsedConnections = await database.getPGOpenedConnections(databaseName);
 
   console.log("PostgreSQL Version:", pgVersion);
   console.log("PostgreSQL Max Connections:", pgMaxConnections);
