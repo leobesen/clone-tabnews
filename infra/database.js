@@ -9,8 +9,13 @@ const pool = new Pool({
 });
 
 async function query(queryObject) {
-  const res = await pool.query(queryObject);
-  return res;
+  try {
+    const res = await pool.query(queryObject);
+    return res;
+  } catch (err) {
+    console.error("Database query error:", err);
+    throw err;
+  }
 }
 
 async function getPGVersion() {
