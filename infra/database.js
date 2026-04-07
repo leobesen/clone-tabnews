@@ -20,6 +20,16 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production" ? true : false,
 });
 
+async function getClient() {
+  try {
+    const client = await pool.connect();
+    return client;
+  } catch (err) {
+    console.error("Database connection error:", err);
+    throw err;
+  }
+}
+
 async function query(queryObject) {
   try {
     const res = await pool.query(queryObject);
@@ -55,6 +65,7 @@ async function getPGOpenedConnections(databaseName = "local_db") {
 export default {
   query,
   close,
+  getClient,
   getPGVersion,
   getPGMaxConnections,
   getPGOpenedConnections,
