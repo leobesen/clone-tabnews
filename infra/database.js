@@ -1,4 +1,15 @@
+import dotenv from "dotenv";
+import path from "path";
 import { Pool } from "pg";
+import { fileURLToPath } from "url";
+
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDirectoryPath = path.dirname(currentFilePath);
+const envFilePath = path.resolve(currentDirectoryPath, "../.env.development");
+
+dotenv.config({
+  path: envFilePath,
+});
 
 const pool = new Pool({
   host: process.env.POSTGRES_HOST,
@@ -17,6 +28,10 @@ async function query(queryObject) {
     console.error("Database query error:", err);
     throw err;
   }
+}
+
+async function close() {
+  await pool.end();
 }
 
 async function getPGVersion() {
@@ -39,6 +54,7 @@ async function getPGOpenedConnections(databaseName = "local_db") {
 
 export default {
   query,
+  close,
   getPGVersion,
   getPGMaxConnections,
   getPGOpenedConnections,
