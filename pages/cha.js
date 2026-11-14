@@ -20,7 +20,7 @@ const SEXOS = Object.keys(TIMES);
 const CHAVE_LOCAL = "cha-revelacao-eu";
 const EU_VAZIO = { nome: "", palpite: null, segredo: "" };
 // Quem já votou neste aparelho e só quer acompanhar o placar.
-const ESPECTADOR = { ...EU_VAZIO, espectador: true };
+export const ESPECTADOR = { ...EU_VAZIO, espectador: true };
 
 function postarJson(url, corpo) {
   return fetch(url, {
@@ -30,7 +30,9 @@ function postarJson(url, corpo) {
   });
 }
 
-function useEstadoDoCha() {
+// ritmoNormal: intervalo de consulta em ms; a TV usa 1000 para acompanhar o
+// toque do Leo quase na hora.
+export function useEstadoDoCha(ritmoNormal = 3000) {
   const [estado, setEstado] = useState(null);
   const recarregar = useCallback(async () => {
     try {
@@ -46,7 +48,7 @@ function useEstadoDoCha() {
   }, []);
   // Com a caixa aberta todos olham para a tela: consulta mais rápida para a
   // revelação aparecer em cerca de 1 segundo depois do toque do Leo.
-  const ritmo = estado?.contagem_iniciada ? 1000 : 3000;
+  const ritmo = estado?.contagem_iniciada ? 1000 : ritmoNormal;
   useEffect(() => {
     recarregar();
     const intervalo = setInterval(recarregar, ritmo);
@@ -233,6 +235,7 @@ function Disputa({
   aoOutraPessoa,
   aoVoltar,
   aoEditar,
+  somenteAssistir,
 }) {
   const votando = !eu.palpite && !eu.espectador;
   return (
@@ -255,7 +258,7 @@ function Disputa({
         />
       ))}
       {/* Crianças e quem está sem celular votam pelo aparelho de outra pessoa. */}
-      {!votando && (
+      {!votando && !somenteAssistir && (
         <p className="cha-rodape">
           {eu.palpite && <button onClick={aoTrocar}>trocar palpite</button>}
           <button onClick={aoOutraPessoa}>votar por outra pessoa</button>
@@ -416,6 +419,7 @@ export function TelaDoCha({
   recarregar,
   aoEditar,
   enviarPalpite = gravarPalpiteNaApi,
+  somenteAssistir = false,
 }) {
   const contagem = useContagem(estado?.revelaEm);
   const [somLigado, alternarSom] = useSomDoCha(
@@ -486,6 +490,7 @@ export function TelaDoCha({
         aoTrocar={() => salvarEu({ ...eu, palpite: null })}
         aoVoltar={eu.anterior ? voltar : null}
         aoEditar={aoEditar}
+        somenteAssistir={somenteAssistir}
         aoOutraPessoa={() =>
           salvarEu({ ...EU_VAZIO, anterior: { ...eu, anterior: undefined } })
         }
@@ -494,14 +499,15 @@ export function TelaDoCha({
   );
 }
 
-function Cha() {
-  const [estado, recarregar] = useEstadoDoCha();
-  const [eu, salvarEu] = useEuSalvo();
-  const token = useRouter().query.admin;
+/**
+ * Moldura comum das páginas do chá: título, fonte e estilos.
+ * Ex.: <PaginaDoCha titulo="TV · Mathias ou Serena?" classe="cha-tv">…</PaginaDoCha>
+ */
+export function PaginaDoCha({ titulo, classe = "", children }) {
   return (
-    <div className="cha">
+    <div className={`cha ${classe}`}>
       <Head>
-        <title>Mathias ou Serena? · Chá revelação</title>
+        <title>{titulo}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="robots" content="noindex" />
         <link
@@ -509,6 +515,18 @@ function Cha() {
           href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&display=swap"
         />
       </Head>
+      {children}
+      <style dangerouslySetInnerHTML={{ __html: estilosDoCha }} />
+    </div>
+  );
+}
+
+function Cha() {
+  const [estado, recarregar] = useEstadoDoCha();
+  const [eu, salvarEu] = useEuSalvo();
+  const token = useRouter().query.admin;
+  return (
+    <PaginaDoCha titulo="Mathias ou Serena? · Chá revelação">
       <TelaDoCha
         estado={estado}
         eu={eu}
@@ -523,8 +541,7 @@ function Cha() {
       {token && estado && (
         <PainelDoLeo token={token} estado={estado} aoMudar={recarregar} />
       )}
-      <style dangerouslySetInnerHTML={{ __html: estilosDoCha }} />
-    </div>
+    </PaginaDoCha>
   );
 }
 

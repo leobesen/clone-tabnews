@@ -1,7 +1,6 @@
-import Head from "next/head";
 import { useState } from "react";
-import estilosDoCha from "components/cha/estilos.js";
-import { TIMES, TelaDoCha } from "pages/cha.js";
+import { ESPECTADOR, PaginaDoCha, TIMES, TelaDoCha } from "pages/cha.js";
+import { useSomAoPrimeiroToque } from "components/cha/som.js";
 
 // Ensaio da brincadeira: mesmo visual de /cha, mas tudo fica na memória desta aba.
 // Nenhum voto ou revelação daqui chega ao banco nem aos celulares dos convidados.
@@ -63,9 +62,11 @@ function BarraDeTeste({ estado, aoIniciar, aoRevelar }) {
   );
 }
 
-function ChaDeTeste() {
+// modoTv: mesma simulação com a aparência de /cha/tv (usado por /cha/tv/teste).
+export function ChaDeTeste({ modoTv = false }) {
   const [estado, setEstado] = useState(ESTADO_INICIAL);
-  const [eu, setEu] = useState(EU_DE_TESTE);
+  const [eu, setEu] = useState(modoTv ? ESPECTADOR : EU_DE_TESTE);
+  useSomAoPrimeiroToque(modoTv);
   async function simularPalpite(corpo) {
     const palpites = comPalpite(estado.palpites, corpo);
     setEstado({ ...estado, palpites });
@@ -81,30 +82,24 @@ function ChaDeTeste() {
     setEstado({ ...estado, resultado, contagem_iniciada: false, revelaEm: 0 });
   }
   return (
-    <div className="cha">
-      <Head>
-        <title>TESTE · Mathias ou Serena?</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="robots" content="noindex" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&display=swap"
-        />
-      </Head>
+    <PaginaDoCha
+      titulo="TESTE · Mathias ou Serena?"
+      classe={modoTv ? "cha-tv" : ""}
+    >
       <TelaDoCha
         estado={estado}
         eu={eu}
         salvarEu={setEu}
         recarregar={async () => {}}
         enviarPalpite={simularPalpite}
+        somenteAssistir={modoTv}
       />
       <BarraDeTeste
         estado={estado}
         aoIniciar={iniciarContagem}
         aoRevelar={revelar}
       />
-      <style dangerouslySetInnerHTML={{ __html: estilosDoCha }} />
-    </div>
+    </PaginaDoCha>
   );
 }
 

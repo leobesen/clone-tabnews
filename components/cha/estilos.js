@@ -103,6 +103,27 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 .cha-painel button { flex: 1; padding: 0.8rem 0.4rem; border: 2px solid var(--creme); border-radius: 10px; color: var(--creme); font-weight: 700; }
 .cha-painel button:not([class]) { background: #55505c; }
 
+/* Página da TV: tudo maior, lado a lado em qualquer largura, sem rodapé. */
+.cha-tv .cha-disputa { flex-direction: row; background: var(--tinta); }
+.cha-tv .cha-metade { min-height: 100vh; }
+.cha-tv .cha-metade.cha-menino { padding-bottom: 1.5rem; }
+.cha-tv .cha-metade.cha-menina { background: linear-gradient(90deg, var(--azul), var(--rosa) 12vw); }
+.cha-tv .cha-onda { display: none; }
+.cha-tv .cha-metade strong { font-size: 11vw; }
+.cha-tv .cha-pct { font-size: 8vw; }
+.cha-tv .cha-metade span { font-size: 2.6vw; }
+.cha-tv .cha-revelacao { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3vh 4vw; }
+.cha-tv .cha-revelacao h1 { font-size: 13vw; margin: 0; }
+.cha-tv .cha-revelacao p, .cha-tv .cha-revelacao h2 { font-size: 2.2vw; margin: 1vh 0 0; }
+.cha-tv .cha-revelacao .cha-sobre { font-size: 2.6vw; }
+.cha-tv .cha-revelacao .cha-sobrenome { font-size: 4.5vw; margin: 0; line-height: 1.1; }
+.cha-tv .cha-nomes { margin-top: 1.5vh; gap: 0.4vw; }
+.cha-tv .cha-nomes li { font-size: 1.3vw; padding: 0.1vw 0.8vw; }
+.cha-tv .cha-frase { display: none; }
+/* Som desligado: aviso grande no topo, alcançável pelo controle remoto. */
+.cha-tv .cha-som[aria-pressed="false"] { top: 3vh; right: 50%; transform: translateX(50%); font-size: 2.2vw; padding: 1vw 2.5vw; white-space: nowrap; }
+.cha-tv .cha-som[aria-pressed="false"]::after { content: " · aperte qualquer tecla"; }
+
 @media (prefers-reduced-motion: reduce) {
   .cha *, .cha { animation: none !important; transition: none !important; }
   .cha-suspense { background: var(--tinta); }

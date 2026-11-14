@@ -58,6 +58,25 @@ function tocarFanfarra(audio) {
 }
 
 /**
+ * Na TV não há onde "tocar" com facilidade: qualquer tecla do controle (ou clique
+ * fora do botão) liga o som. O próprio botão fica de fora para não alternar duas vezes.
+ * Ex.: useSomAoPrimeiroToque(true);
+ */
+export function useSomAoPrimeiroToque(ativo) {
+  useEffect(() => {
+    if (!ativo) return;
+    function ligar(evento) {
+      if (evento.target.closest?.(".cha-som")) return;
+      document.querySelector('.cha-som[aria-pressed="false"]')?.click();
+    }
+    const eventos = ["keydown", "pointerdown"];
+    eventos.forEach((nome) => window.addEventListener(nome, ligar));
+    return () =>
+      eventos.forEach((nome) => window.removeEventListener(nome, ligar));
+  }, [ativo]);
+}
+
+/**
  * Som da contagem e da revelação. Começa desligado: navegadores só liberam áudio
  * depois de um toque, então alternarSom precisa ser chamado num clique.
  * Ex.: const [somLigado, alternarSom] = useSomDoCha(contagem, "contagem");
