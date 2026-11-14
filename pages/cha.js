@@ -377,8 +377,9 @@ function BotoesDaSalaDeTeste({ aoEnviar }) {
 // Antes da contagem só existe o botão de iniciar; os de revelar aparecem depois,
 // para ninguém revelar por engano antes de a caixa ser aberta.
 function PainelDoLeo({ token, estado, aoMudar, sala }) {
+  // pergunta ausente = sem confirmação (revelar precisa ser um toque só).
   async function enviar(corpo, pergunta) {
-    if (!window.confirm(pergunta)) return;
+    if (pergunta && !window.confirm(pergunta)) return;
     const resposta = await postarJson(urlDaApiDoCha(sala, "/resultado"), {
       token,
       ...corpo,
@@ -405,9 +406,7 @@ function PainelDoLeo({ token, estado, aoMudar, sala }) {
         <button
           key={sexo}
           className={`cha-${sexo}`}
-          onClick={() =>
-            enviar({ sexo }, `Revelar para todos: ${TIMES[sexo].grito}`)
-          }
+          onClick={() => enviar({ sexo })}
         >
           {TIMES[sexo].grito}
         </button>
