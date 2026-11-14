@@ -34,7 +34,9 @@ async function migrations(request, response) {
     } catch (error) {
       return response.status(500).json({ error: error.message });
     } finally {
-      await dbClient.release();
+      // release(true) encerra a conexão: o node-pg-migrate não solta o advisory lock
+      // com dbClient externo, e a conexão voltava ao pool segurando o lock.
+      await dbClient.release(true);
     }
   }
   if (request.method === "GET") {
@@ -47,7 +49,7 @@ async function migrations(request, response) {
     } catch (error) {
       return response.status(500).json({ error: error.message });
     } finally {
-      await dbClient.release();
+      await dbClient.release(true);
     }
   }
 }
