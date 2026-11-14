@@ -38,7 +38,10 @@ test("palpite válido é gravado e trocar de ideia não duplica", async () => {
 
   const estado = await buscarEstado();
   expect(estado.resultado).toBeNull();
-  expect(estado.palpites).toEqual([{ nome: "Vó Ana", palpite: "menino" }]);
+  expect(estado.palpites).toEqual([
+    { id: expect.any(Number), nome: "Vó Ana", palpite: "menino" },
+  ]);
+  expect((await primeiro.json()).id).toBe(estado.palpites[0].id);
 });
 
 test("outro aparelho não troca o palpite de um nome já usado", async () => {
@@ -87,6 +90,55 @@ testeComToken("remover exige token e apaga só o nome pedido", async () => {
   const nomes = (await buscarEstado()).palpites.map((p) => p.nome);
   expect(nomes).toEqual(["Vó Ana"]);
 });
+
+testeComToken(
+  "renomear corrige o nome sem perder o voto nem o dono",
+  async () => {
+    const URL_RENOMEAR = `${URL_CHA}/renomear`;
+    const semToken = await postar(URL_RENOMEAR, {
+      nome: "Vó Ana",
+      novoNome: "X",
+    });
+    expect(semToken.status).toBe(401);
+    await postar(URL_CHA, {
+      nome: "Serena",
+      palpite: "menina",
+      segredo: SEGREDO,
+    });
+    const antes = (await buscarEstado()).palpites.find(
+      (p) => p.nome === "Serena",
+    );
+
+    const pedido = { token: TOKEN_ADMIN, nome: "serena" };
+    const repetido = await postar(URL_RENOMEAR, {
+      ...pedido,
+      novoNome: "vó ana",
+    });
+    expect(repetido.status).toBe(400);
+    const vazio = await postar(URL_RENOMEAR, { ...pedido, novoNome: " " });
+    expect(vazio.status).toBe(400);
+    const certo = await postar(URL_RENOMEAR, {
+      ...pedido,
+      novoNome: "Tia Bia",
+    });
+    expect(certo.status).toBe(200);
+    // O nome antigo deixou de existir depois da correção.
+    const sumiu = await postar(URL_RENOMEAR, { ...pedido, novoNome: "Outro" });
+    expect(sumiu.status).toBe(404);
+
+    const troca = { nome: "Tia Bia", palpite: "menino", segredo: SEGREDO };
+    expect((await postar(URL_CHA, troca)).status).toBe(201);
+    const depois = (await buscarEstado()).palpites.find(
+      (p) => p.id === antes.id,
+    );
+    expect(depois).toEqual({
+      id: antes.id,
+      nome: "Tia Bia",
+      palpite: "menino",
+    });
+    await postar(`${URL_CHA}/remover`, { token: TOKEN_ADMIN, nome: "Tia Bia" });
+  },
+);
 
 testeComToken("revelar encerra os palpites e desfazer reabre", async () => {
   const revelar = await postar(`${URL_CHA}/resultado`, {

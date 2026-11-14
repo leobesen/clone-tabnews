@@ -49,6 +49,7 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 .cha-metade strong { transition: transform 0.2s ease; }
 .cha-nomes { list-style: none; margin: 0.8rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; }
 .cha-nomes li { padding: 0.25rem 0.75rem; border-radius: 999px; background: rgba(255, 255, 255, 0.18); }
+.cha-nomes button { background: none; border: 0; padding: 0; color: inherit; font-weight: inherit; }
 .cha-nomes .cha-eu { background: var(--creme); color: var(--tinta); font-weight: 700; }
 @media (min-width: 720px) {
   .cha-disputa { flex-direction: row; flex-wrap: wrap; }
@@ -76,7 +77,10 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 .cha-confete i:nth-child(3n + 1) { border-radius: 50%; height: 0.6rem; }
 @keyframes cha-cair { to { transform: translateY(110vh) rotate(720deg); } }
 
-.cha-painel { position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; display: flex; gap: 0.5rem; padding: 0.6rem; background: var(--tinta); }
+/* Evita que a barra fixa do admin cubra os últimos nomes do placar. */
+.cha:has(.cha-painel) .cha-disputa { padding-bottom: 6.5rem; background: var(--tinta); }
+.cha-painel small { flex-basis: 100%; text-align: center; color: var(--creme); }
+.cha-painel { position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.6rem; background: var(--tinta); }
 .cha-painel button { flex: 1; padding: 0.8rem 0.4rem; border: 2px solid var(--creme); border-radius: 10px; color: var(--creme); font-weight: 700; }
 .cha-painel button:not([class]) { background: #55505c; }
 

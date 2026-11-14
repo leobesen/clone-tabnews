@@ -8,13 +8,13 @@ async function cha(request, response) {
     return response.status(405).json({ error: "Method not allowed" });
   }
   try {
-    const gravado = await chaRevelacao.registrarPalpiteDoCha(request.body);
-    if (!gravado) {
+    const id = await chaRevelacao.registrarPalpiteDoCha(request.body);
+    if (id === null) {
       return response
         .status(409)
         .json({ error: "Palpites encerrados ou nome já usado." });
     }
-    return response.status(201).json({});
+    return response.status(201).json({ id });
   } catch (error) {
     if (!(error instanceof chaRevelacao.EntradaInvalidaDoCha)) throw error;
     return response.status(400).json({ error: error.message });

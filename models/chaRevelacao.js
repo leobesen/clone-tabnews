@@ -49,7 +49,7 @@ function validarPalpite(corpo) {
  */
 async function buscarEstadoDoCha() {
   const palpites = await database.query(
-    "SELECT nome, palpite FROM cha_palpites ORDER BY created_at, id;",
+    "SELECT id, nome, palpite FROM cha_palpites ORDER BY created_at, id;",
   );
   const resultado = await database.query({
     text: `SELECT sexo, GREATEST(0, $1 - EXTRACT(EPOCH FROM (now() - revelado_em)) * 1000)::int AS restante_ms
@@ -64,8 +64,8 @@ async function buscarEstadoDoCha() {
 }
 
 /**
- * Grava (ou troca) o palpite de um convidado. Devolve false se a votação já
- * encerrou ou se o nome pertence a outro aparelho (segredo diferente).
+ * Grava (ou troca) o palpite de um convidado. Devolve o id do palpite, ou null se a
+ * votação já encerrou ou se o nome pertence a outro aparelho (segredo diferente).
  * Ex.: await registrarPalpiteDoCha({ nome: "Vó Ana", palpite: "menina", segredo });
  */
 async function registrarPalpiteDoCha(corpo) {
@@ -88,7 +88,7 @@ async function registrarPalpiteDoCha(corpo) {
       LIMITE_PALPITES,
     ],
   });
-  return gravado.rowCount > 0;
+  return gravado.rows[0]?.id ?? null;
 }
 
 function tokenAdminValido(token) {
@@ -123,7 +123,34 @@ async function removerPalpiteDoCha(nome) {
   return removido.rowCount > 0;
 }
 
+/**
+ * Corrige o nome de quem votou (ex.: digitou o nome do bebê). Devolve false se o
+ * nome atual não existir; lança EntradaInvalidaDoCha se o novo for vazio ou repetido.
+ * Ex.: await renomearPalpiteDoCha("Mathias", "Tio Beto");
+ */
+async function renomearPalpiteDoCha(nomeAtual, nomeNovo) {
+  const novo = limparTexto(nomeNovo, 40);
+  if (!novo) {
+    throw new EntradaInvalidaDoCha(
+      `Nome novo inválido: ${JSON.stringify(nomeNovo)}. Esperado texto de 1 a 40 caracteres.`,
+    );
+  }
+  const atual = limparTexto(nomeAtual, 40).toLocaleLowerCase("pt-BR");
+  try {
+    const renomeado = await database.query({
+      text: "UPDATE cha_palpites SET nome = $1, nome_normalizado = $2 WHERE nome_normalizado = $3;",
+      values: [novo, novo.toLocaleLowerCase("pt-BR"), atual],
+    });
+    return renomeado.rowCount > 0;
+  } catch (error) {
+    // 23505 = unique_violation: já existe outro palpite com o nome novo.
+    if (error.code !== "23505") throw error;
+    throw new EntradaInvalidaDoCha(`Nome já usado: ${JSON.stringify(novo)}.`);
+  }
+}
+
 export default {
+  renomearPalpiteDoCha,
   removerPalpiteDoCha,
   EntradaInvalidaDoCha,
   buscarEstadoDoCha,

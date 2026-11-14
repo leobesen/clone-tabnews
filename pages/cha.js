@@ -146,19 +146,24 @@ function Entrada({ palpites, aoEntrar, aoVoltar }) {
   );
 }
 
-function ListaDeNomes({ palpites, meuNome }) {
+// Com aoEditar (modo admin) cada nome vira um botão para corrigir ou remover.
+function ListaDeNomes({ palpites, meuNome, aoEditar }) {
   return (
     <ul className="cha-nomes">
       {palpites.map((p) => (
         <li key={p.nome} className={p.nome === meuNome ? "cha-eu" : undefined}>
-          {p.nome}
+          {aoEditar ? (
+            <button onClick={() => aoEditar(p.nome)}>{p.nome} ✎</button>
+          ) : (
+            p.nome
+          )}
         </li>
       ))}
     </ul>
   );
 }
 
-function MetadeDoTime({ sexo, time, aoEscolher, meuNome }) {
+function MetadeDoTime({ sexo, time, aoEscolher, meuNome, aoEditar }) {
   const { nome, significado } = TIMES[sexo];
   if (aoEscolher) {
     return (
@@ -181,7 +186,7 @@ function MetadeDoTime({ sexo, time, aoEscolher, meuNome }) {
       <span>
         {time.length} {time.length === 1 ? "palpite" : "palpites"}
       </span>
-      <ListaDeNomes palpites={time} meuNome={meuNome} />
+      <ListaDeNomes palpites={time} meuNome={meuNome} aoEditar={aoEditar} />
     </section>
   );
 }
@@ -200,6 +205,7 @@ function Disputa({
   aoTrocar,
   aoOutraPessoa,
   aoVoltar,
+  aoEditar,
 }) {
   const votando = !eu.palpite && !eu.espectador;
   return (
@@ -220,6 +226,7 @@ function Disputa({
           time={palpites.filter((p) => p.palpite === sexo)}
           aoEscolher={votando ? aoEscolher : null}
           meuNome={eu.nome}
+          aoEditar={aoEditar}
         />
       ))}
     </main>
@@ -287,13 +294,6 @@ function PainelDoLeo({ token, resultado, aoMudar }) {
     if (!resposta.ok) window.alert("Não deu certo: link de admin inválido.");
     aoMudar();
   }
-  async function remover() {
-    const nome = window.prompt("Nome a remover do placar:");
-    if (!nome) return;
-    const resposta = await postarJson("/api/v1/cha/remover", { token, nome });
-    if (!resposta.ok) window.alert("Não encontrei esse nome no placar.");
-    aoMudar();
-  }
   return (
     <aside className="cha-painel">
       {SEXOS.map((sexo) => (
@@ -307,7 +307,9 @@ function PainelDoLeo({ token, resultado, aoMudar }) {
           {TIMES[sexo].grito}
         </button>
       ))}
-      {!resultado && <button onClick={remover}>Remover nome</button>}
+      {!resultado && (
+        <small>Toque num nome do placar (✎) para corrigir ou remover.</small>
+      )}
       {resultado && (
         <button onClick={() => definir(null, "Desfazer a revelação?")}>
           Desfazer
@@ -317,7 +319,22 @@ function PainelDoLeo({ token, resultado, aoMudar }) {
   );
 }
 
-function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
+// Admin: corrige o nome de quem votou errado; nome vazio remove o voto.
+async function editarNomeDoPalpite(token, nome) {
+  const aviso = `Corrigir o nome de "${nome}".\nPara REMOVER o voto, apague tudo e confirme.`;
+  const novoNome = window.prompt(aviso, nome);
+  if (novoNome === null || novoNome.trim() === nome) return;
+  const remover = !novoNome.trim();
+  if (remover && !window.confirm(`Remover o voto de "${nome}"?`)) return;
+  const resposta = await postarJson(
+    `/api/v1/cha/${remover ? "remover" : "renomear"}`,
+    { token, nome, novoNome },
+  );
+  if (!resposta.ok)
+    window.alert("Não deu certo. Já existe alguém com esse nome?");
+}
+
+function TelaDoCha({ estado, eu, salvarEu, recarregar, aoEditar }) {
   const contagem = useContagem(estado?.revelaEm);
   const [erro, setErro] = useState("");
   async function apostar(palpite) {
@@ -325,7 +342,8 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
       () => null,
     );
     await recarregar();
-    if (resposta?.ok) salvarEu({ ...eu, palpite, anterior: undefined });
+    const { id } = resposta?.ok ? await resposta.json() : {};
+    if (resposta?.ok) salvarEu({ ...eu, palpite, id, anterior: undefined });
     const motivo =
       resposta?.status === 409
         ? "Esse nome já está em uso. Recarregue a página e use outro."
@@ -333,11 +351,18 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
     setErro(resposta?.ok ? "" : motivo);
     recarregar();
   }
-  // Palpite removido pelo Leo (ex.: nome do bebê no lugar do nome): volta ao início.
+  // Acompanha correções do Leo: palpite removido volta ao início; nome corrigido
+  // é adotado. Aparelhos antigos (sem id salvo) são achados pelo nome.
   useEffect(() => {
     if (!estado || estado.resultado || !eu.palpite) return;
     const mesmoNome = (p) => p.nome.toLowerCase() === eu.nome.toLowerCase();
-    if (!estado.palpites.some(mesmoNome)) salvarEu(EU_VAZIO);
+    const meu = estado.palpites.find((p) =>
+      eu.id ? p.id === eu.id : mesmoNome(p),
+    );
+    if (!meu) return salvarEu(EU_VAZIO);
+    if (meu.nome !== eu.nome || meu.id !== eu.id) {
+      salvarEu({ ...eu, nome: meu.nome, id: meu.id });
+    }
   }, [estado, eu, salvarEu]);
   if (!estado) return <main className="cha-entrada">Carregando…</main>;
   if (contagem > 0) return <Suspense contagem={contagem} />;
@@ -367,6 +392,7 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
         aoEscolher={apostar}
         aoTrocar={() => salvarEu({ ...eu, palpite: null })}
         aoVoltar={eu.anterior ? voltar : null}
+        aoEditar={aoEditar}
         aoOutraPessoa={() =>
           salvarEu({ ...EU_VAZIO, anterior: { ...eu, anterior: undefined } })
         }
@@ -395,6 +421,11 @@ function Cha() {
         eu={eu}
         salvarEu={salvarEu}
         recarregar={recarregar}
+        aoEditar={
+          token
+            ? (nome) => editarNomeDoPalpite(token, nome).then(recarregar)
+            : null
+        }
       />
       {token && estado && (
         <PainelDoLeo
