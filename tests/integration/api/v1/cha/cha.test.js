@@ -27,7 +27,6 @@ test("palpite válido é gravado e trocar de ideia não duplica", async () => {
   const primeiro = await postar(URL_CHA, {
     nome: "  Vó   Ana ",
     palpite: "menina",
-    recado: "Te amo!",
     segredo: SEGREDO,
   });
   expect(primeiro.status).toBe(201);
@@ -39,9 +38,7 @@ test("palpite válido é gravado e trocar de ideia não duplica", async () => {
 
   const estado = await buscarEstado();
   expect(estado.resultado).toBeNull();
-  expect(estado.palpites).toEqual([
-    { nome: "Vó Ana", palpite: "menino", recado: "" },
-  ]);
+  expect(estado.palpites).toEqual([{ nome: "Vó Ana", palpite: "menino" }]);
 });
 
 test("outro aparelho não troca o palpite de um nome já usado", async () => {

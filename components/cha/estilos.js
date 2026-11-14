@@ -20,8 +20,8 @@ body { margin: 0; }
 .cha-entrada h1 em { font-weight: 400; font-size: 0.6em; }
 .cha-entrada form { display: grid; gap: 0.4rem; margin-top: 1.5rem; }
 .cha-entrada label { font-weight: 700; font-size: 0.9rem; margin-top: 0.6rem; }
-.cha-entrada input, .cha-entrada textarea {
-  font: inherit; font-size: 1rem; padding: 0.8rem; width: 100%; resize: vertical;
+.cha-entrada input {
+  font: inherit; font-size: 1rem; padding: 0.8rem; width: 100%;
   border: 2px solid var(--tinta); border-radius: 12px; background: #fff; color: var(--tinta);
 }
 .cha-entrada form button {
@@ -66,8 +66,6 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 .cha-sobrenome { font-style: italic; font-size: clamp(1.6rem, 8vw, 3rem); margin: 0; }
 .cha-frase { font-size: 1.25rem; font-weight: 700; margin: 2rem 0; }
 .cha-revelacao h2 { font-size: 1.3rem; margin: 2.5rem 0 0; }
-.cha-revelacao blockquote { max-width: 28rem; margin: 0.75rem auto; padding: 1rem; border-radius: 16px; background: rgba(255, 255, 255, 0.14); overflow-wrap: anywhere; }
-.cha-revelacao cite { display: block; margin-top: 0.4rem; font-size: 0.85rem; }
 .cha-confete { position: absolute; inset: 0; pointer-events: none; }
 .cha-confete i { position: absolute; top: -2rem; width: 0.6rem; height: 1rem; background: var(--creme); animation: cha-cair linear infinite; }
 .cha-confete i:nth-child(3n) { background: var(--sol); }

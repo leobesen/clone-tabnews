@@ -40,7 +40,6 @@ function validarPalpite(corpo) {
     nome,
     segredo,
     palpite: validarSexo(corpo?.palpite),
-    recado: limparTexto(corpo?.recado, 140),
   };
 }
 
@@ -50,7 +49,7 @@ function validarPalpite(corpo) {
  */
 async function buscarEstadoDoCha() {
   const palpites = await database.query(
-    "SELECT nome, palpite, recado FROM cha_palpites ORDER BY created_at, id;",
+    "SELECT nome, palpite FROM cha_palpites ORDER BY created_at, id;",
   );
   const resultado = await database.query({
     text: `SELECT sexo, GREATEST(0, $1 - EXTRACT(EPOCH FROM (now() - revelado_em)) * 1000)::int AS restante_ms
@@ -70,24 +69,23 @@ async function buscarEstadoDoCha() {
  * Ex.: await registrarPalpiteDoCha({ nome: "Vó Ana", palpite: "menina", segredo });
  */
 async function registrarPalpiteDoCha(corpo) {
-  const { nome, palpite, recado, segredo } = validarPalpite(corpo);
+  const { nome, palpite, segredo } = validarPalpite(corpo);
   const gravado = await database.query({
-    text: `INSERT INTO cha_palpites (nome, nome_normalizado, palpite, recado, segredo)
-           SELECT $1::varchar, $2::varchar, $3::varchar, $4::varchar, $6::varchar
+    text: `INSERT INTO cha_palpites (nome, nome_normalizado, palpite, segredo)
+           SELECT $1::varchar, $2::varchar, $3::varchar, $4::varchar
            WHERE NOT EXISTS (SELECT 1 FROM cha_resultado)
              AND ((SELECT count(*) FROM cha_palpites) < $5
                OR EXISTS (SELECT 1 FROM cha_palpites WHERE nome_normalizado = $2::varchar))
            ON CONFLICT (nome_normalizado)
-           DO UPDATE SET palpite = EXCLUDED.palpite, recado = EXCLUDED.recado
+           DO UPDATE SET palpite = EXCLUDED.palpite
            WHERE cha_palpites.segredo = EXCLUDED.segredo
            RETURNING id;`,
     values: [
       nome,
       nome.toLocaleLowerCase("pt-BR"),
       palpite,
-      recado,
-      LIMITE_PALPITES,
       segredo,
+      LIMITE_PALPITES,
     ],
   });
   return gravado.rowCount > 0;

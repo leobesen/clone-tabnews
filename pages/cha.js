@@ -17,7 +17,7 @@ const TIMES = {
 };
 const SEXOS = Object.keys(TIMES);
 const CHAVE_LOCAL = "cha-revelacao-eu";
-const EU_VAZIO = { nome: "", palpite: null, recado: "", segredo: "" };
+const EU_VAZIO = { nome: "", palpite: null, segredo: "" };
 
 function postarJson(url, corpo) {
   return fetch(url, {
@@ -83,7 +83,6 @@ function useContagem(revelaEm) {
 
 function Entrada({ palpites, aoEntrar }) {
   const [nome, setNome] = useState("");
-  const [recado, setRecado] = useState("");
   const limpo = nome.trim().replace(/\s+/g, " ");
   const repetido = palpites.some(
     (p) =>
@@ -91,7 +90,7 @@ function Entrada({ palpites, aoEntrar }) {
   );
   function enviar(evento) {
     evento.preventDefault();
-    if (limpo && !repetido) aoEntrar({ nome: limpo, recado: recado.trim() });
+    if (limpo && !repetido) aoEntrar({ nome: limpo });
   }
   return (
     <main className="cha-entrada">
@@ -120,14 +119,6 @@ function Entrada({ palpites, aoEntrar }) {
             apelido.
           </p>
         )}
-        <label htmlFor="cha-recado">Um recado para o bebê (opcional)</label>
-        <textarea
-          id="cha-recado"
-          value={recado}
-          maxLength={140}
-          rows={2}
-          onChange={(e) => setRecado(e.target.value)}
-        />
         <button type="submit">Entrar na brincadeira</button>
       </form>
     </main>
@@ -236,7 +227,6 @@ function fraseParaMim(eu, resultado) {
 function Revelacao({ palpites, resultado, eu }) {
   const { nome, significado, grito } = TIMES[resultado];
   const acertaram = palpites.filter((p) => p.palpite === resultado);
-  const recados = palpites.filter((p) => p.recado);
   return (
     <main className={`cha-revelacao cha-${resultado}`}>
       <Confete />
@@ -249,13 +239,6 @@ function Revelacao({ palpites, resultado, eu }) {
         Acertaram ({acertaram.length} de {palpites.length})
       </h2>
       <ListaDeNomes palpites={acertaram} meuNome={eu.nome} />
-      {recados.length > 0 && <h2>Recados para {nome}</h2>}
-      {recados.map((p) => (
-        <blockquote key={p.nome}>
-          {p.recado}
-          <cite>{p.nome}</cite>
-        </blockquote>
-      ))}
     </main>
   );
 }
