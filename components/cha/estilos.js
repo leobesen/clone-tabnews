@@ -28,6 +28,9 @@ body { margin: 0; }
   margin-top: 1rem; padding: 1rem; border: 0; border-radius: 999px;
   background: var(--tinta); color: var(--creme); font-weight: 700;
 }
+.cha-passos { margin: 1rem 0 0; padding: 0.7rem 1rem; border-radius: 12px; background: #f3e6d2; }
+.cha-dica { margin: 0; font-size: 0.9rem; }
+.cha-entrada input::placeholder { color: #8a8490; }
 .cha-aviso { color: #8f2a00; font-size: 0.9rem; margin: 0; }
 .cha-erro { background: var(--sol); text-align: center; padding: 0.5rem; }
 

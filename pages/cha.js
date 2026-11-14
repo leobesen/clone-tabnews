@@ -88,9 +88,13 @@ function Entrada({ palpites, aoEntrar }) {
     (p) =>
       p.nome.toLocaleLowerCase("pt-BR") === limpo.toLocaleLowerCase("pt-BR"),
   );
+  // Convidados digitavam o nome do bebê aqui, achando que já era o palpite.
+  const nomeDoBebe = Object.values(TIMES).some(
+    (time) => time.nome.toLowerCase() === limpo.toLowerCase(),
+  );
   function enviar(evento) {
     evento.preventDefault();
-    if (limpo && !repetido) aoEntrar({ nome: limpo });
+    if (limpo && !repetido && !nomeDoBebe) aoEntrar({ nome: limpo });
   }
   return (
     <main className="cha-entrada">
@@ -99,17 +103,23 @@ function Entrada({ palpites, aoEntrar }) {
         <span className="cha-azul">Mathias</span> <em>ou</em>{" "}
         <span className="cha-rosa">Serena</span>?
       </h1>
-      <p>
-        Vamos ser papais! Antes de a gente descobrir, entre na brincadeira e
-        deixe o seu palpite.
+      <p>Vamos ser papais! Antes de a gente descobrir, entre na brincadeira.</p>
+      <p className="cha-passos">
+        <strong>1.</strong> Diga quem é você · <strong>2.</strong> Dê o seu
+        palpite
       </p>
       <form onSubmit={enviar}>
-        <label htmlFor="cha-nome">Seu nome</label>
+        <label htmlFor="cha-nome">Quem é você? Escreva o SEU nome</label>
+        <p className="cha-dica" id="cha-dica">
+          Não é o nome do bebê: o palpite vem na próxima tela.
+        </p>
         <input
           id="cha-nome"
           value={nome}
           maxLength={40}
           autoComplete="name"
+          placeholder="Ex.: Tia Bia"
+          aria-describedby="cha-dica"
           onChange={(e) => setNome(e.target.value)}
           required
         />
@@ -119,7 +129,13 @@ function Entrada({ palpites, aoEntrar }) {
             apelido.
           </p>
         )}
-        <button type="submit">Entrar na brincadeira</button>
+        {nomeDoBebe && (
+          <p className="cha-aviso" role="alert">
+            Esse é o nome do bebê! Aqui vai o seu nome. O palpite é na próxima
+            tela.
+          </p>
+        )}
+        <button type="submit">Continuar para o palpite</button>
       </form>
     </main>
   );
@@ -254,6 +270,13 @@ function PainelDoLeo({ token, resultado, aoMudar }) {
     if (!resposta.ok) window.alert("Não deu certo: link de admin inválido.");
     aoMudar();
   }
+  async function remover() {
+    const nome = window.prompt("Nome a remover do placar:");
+    if (!nome) return;
+    const resposta = await postarJson("/api/v1/cha/remover", { token, nome });
+    if (!resposta.ok) window.alert("Não encontrei esse nome no placar.");
+    aoMudar();
+  }
   return (
     <aside className="cha-painel">
       {SEXOS.map((sexo) => (
@@ -267,6 +290,7 @@ function PainelDoLeo({ token, resultado, aoMudar }) {
           {TIMES[sexo].grito}
         </button>
       ))}
+      {!resultado && <button onClick={remover}>Remover nome</button>}
       {resultado && (
         <button onClick={() => definir(null, "Desfazer a revelação?")}>
           Desfazer
@@ -283,6 +307,7 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
     const resposta = await postarJson("/api/v1/cha", { ...eu, palpite }).catch(
       () => null,
     );
+    await recarregar();
     if (resposta?.ok) salvarEu({ ...eu, palpite });
     const motivo =
       resposta?.status === 409
@@ -291,6 +316,12 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
     setErro(resposta?.ok ? "" : motivo);
     recarregar();
   }
+  // Palpite removido pelo Leo (ex.: nome do bebê no lugar do nome): volta ao início.
+  useEffect(() => {
+    if (!estado || estado.resultado || !eu.palpite) return;
+    const mesmoNome = (p) => p.nome.toLowerCase() === eu.nome.toLowerCase();
+    if (!estado.palpites.some(mesmoNome)) salvarEu(EU_VAZIO);
+  }, [estado, eu, salvarEu]);
   if (!estado) return <main className="cha-entrada">Carregando…</main>;
   if (contagem > 0) return <Suspense contagem={contagem} />;
   if (estado.resultado) return <Revelacao {...estado} eu={eu} />;

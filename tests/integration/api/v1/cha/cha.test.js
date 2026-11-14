@@ -75,6 +75,19 @@ test("resultado exige token", async () => {
 // O token não é versionado: rode com CHA_TOKEN_ADMIN=<token> npm test.
 const testeComToken = TOKEN_ADMIN ? test : test.skip;
 
+testeComToken("remover exige token e apaga só o nome pedido", async () => {
+  const semToken = await postar(`${URL_CHA}/remover`, { nome: "Vó Ana" });
+  expect(semToken.status).toBe(401);
+  const dados = { nome: "Mathias", palpite: "menino", segredo: SEGREDO };
+  await postar(URL_CHA, dados);
+
+  const remocao = { token: TOKEN_ADMIN, nome: " mathias " };
+  expect((await postar(`${URL_CHA}/remover`, remocao)).status).toBe(200);
+  expect((await postar(`${URL_CHA}/remover`, remocao)).status).toBe(404);
+  const nomes = (await buscarEstado()).palpites.map((p) => p.nome);
+  expect(nomes).toEqual(["Vó Ana"]);
+});
+
 testeComToken("revelar encerra os palpites e desfazer reabre", async () => {
   const revelar = await postar(`${URL_CHA}/resultado`, {
     token: TOKEN_ADMIN,

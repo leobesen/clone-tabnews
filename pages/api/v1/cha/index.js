@@ -10,7 +10,9 @@ async function cha(request, response) {
   try {
     const gravado = await chaRevelacao.registrarPalpiteDoCha(request.body);
     if (!gravado) {
-      return response.status(409).json({ error: "Palpites encerrados ou nome já usado." });
+      return response
+        .status(409)
+        .json({ error: "Palpites encerrados ou nome já usado." });
     }
     return response.status(201).json({});
   } catch (error) {

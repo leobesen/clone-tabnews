@@ -111,7 +111,20 @@ async function definirResultadoDoCha(sexo) {
   });
 }
 
+/**
+ * Remove o palpite de um nome (ex.: quem digitou o nome do bebê); devolve false se não existir.
+ * Ex.: await removerPalpiteDoCha("Mathias");
+ */
+async function removerPalpiteDoCha(nome) {
+  const removido = await database.query({
+    text: "DELETE FROM cha_palpites WHERE nome_normalizado = $1;",
+    values: [limparTexto(nome, 40).toLocaleLowerCase("pt-BR")],
+  });
+  return removido.rowCount > 0;
+}
+
 export default {
+  removerPalpiteDoCha,
   EntradaInvalidaDoCha,
   buscarEstadoDoCha,
   registrarPalpiteDoCha,
