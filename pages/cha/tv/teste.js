@@ -1,8 +1,8 @@
-import { ChaDeTeste } from "pages/cha/teste.js";
+import { TelaDaTv } from "pages/cha/tv.js";
 
-// Ensaio da tela da TV: nada é gravado nem aparece para os convidados.
+// Ensaio da TV: acompanha a sala de teste, controlada por /cha/teste?admin=token.
 function ChaNaTvDeTeste() {
-  return <ChaDeTeste modoTv />;
+  return <TelaDaTv sala="teste" />;
 }
 
 export default ChaNaTvDeTeste;

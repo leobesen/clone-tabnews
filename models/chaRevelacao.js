@@ -11,6 +11,31 @@ const HASH_TOKEN_ADMIN =
 
 class EntradaInvalidaDoCha extends Error {}
 
+// A sala "teste" usa tabelas próprias (cha_teste_*): o ensaio com TV, admin e
+// celulares passa pelo servidor sem tocar nos palpites reais da festa.
+const SALA_DA_FESTA = "festa";
+const SALA_DE_TESTE = "teste";
+
+/**
+ * Valida o parâmetro ?sala= das rotas; ausente significa a festa real.
+ * Ex.: const sala = validarSalaDoCha(request.query.sala);
+ */
+function validarSalaDoCha(sala = SALA_DA_FESTA) {
+  if ([SALA_DA_FESTA, SALA_DE_TESTE].includes(sala)) return sala;
+  throw new EntradaInvalidaDoCha(
+    `Sala inválida: ${JSON.stringify(sala)}. Esperado "festa" ou "teste".`,
+  );
+}
+
+function consultarNaSala(sala, consulta) {
+  const texto = typeof consulta === "string" ? consulta : consulta.text;
+  const text =
+    sala === SALA_DE_TESTE
+      ? texto.replace(/cha_(palpites|resultado)/g, "cha_teste_$1")
+      : texto;
+  return database.query({ text, values: consulta.values ?? [] });
+}
+
 function limparTexto(valor, limite) {
   if (typeof valor !== "string") return "";
   return valor.trim().replace(/\s+/g, " ").slice(0, limite);
@@ -49,11 +74,12 @@ function validarPalpite(corpo) {
  * restante_ms: quanto falta da contagem (0 depois que ela termina).
  * Ex.: const { palpites, resultado, restante_ms } = await buscarEstadoDoCha();
  */
-async function buscarEstadoDoCha() {
-  const palpites = await database.query(
+async function buscarEstadoDoCha(sala = SALA_DA_FESTA) {
+  const palpites = await consultarNaSala(
+    sala,
     "SELECT id, nome, palpite FROM cha_palpites ORDER BY created_at, id;",
   );
-  const resultado = await database.query({
+  const resultado = await consultarNaSala(sala, {
     text: `SELECT sexo, CASE WHEN sexo IS NULL
              THEN GREATEST(0, $1 - EXTRACT(EPOCH FROM (now() - revelado_em)) * 1000)::int
              ELSE 0 END AS restante_ms
@@ -73,9 +99,9 @@ async function buscarEstadoDoCha() {
  * votação já encerrou ou se o nome pertence a outro aparelho (segredo diferente).
  * Ex.: await registrarPalpiteDoCha({ nome: "Vó Ana", palpite: "menina", segredo });
  */
-async function registrarPalpiteDoCha(corpo) {
+async function registrarPalpiteDoCha(corpo, sala = SALA_DA_FESTA) {
   const { nome, palpite, segredo } = validarPalpite(corpo);
-  const gravado = await database.query({
+  const gravado = await consultarNaSala(sala, {
     text: `INSERT INTO cha_palpites (nome, nome_normalizado, palpite, segredo)
            SELECT $1::varchar, $2::varchar, $3::varchar, $4::varchar
            WHERE NOT EXISTS (SELECT 1 FROM cha_resultado)
@@ -107,8 +133,9 @@ function tokenAdminValido(token) {
  * revelar nada: o sexo só entra depois que a caixa de balões é aberta.
  * Ex.: await iniciarContagemDoCha();
  */
-async function iniciarContagemDoCha() {
-  return database.query(
+async function iniciarContagemDoCha(sala = SALA_DA_FESTA) {
+  return consultarNaSala(
+    sala,
     `INSERT INTO cha_resultado (sexo) VALUES (NULL)
      ON CONFLICT (unica_linha) DO UPDATE SET sexo = NULL, revelado_em = now();`,
   );
@@ -118,9 +145,9 @@ async function iniciarContagemDoCha() {
  * Revela o sexo (ou desfaz, com sexo null, em caso de toque errado).
  * Ex.: await definirResultadoDoCha("menina");
  */
-async function definirResultadoDoCha(sexo) {
-  if (sexo === null) return database.query("DELETE FROM cha_resultado;");
-  return database.query({
+async function definirResultadoDoCha(sexo, sala = SALA_DA_FESTA) {
+  if (sexo === null) return consultarNaSala(sala, "DELETE FROM cha_resultado;");
+  return consultarNaSala(sala, {
     text: `INSERT INTO cha_resultado (sexo) VALUES ($1)
            ON CONFLICT (unica_linha)
            DO UPDATE SET sexo = EXCLUDED.sexo, revelado_em = now();`,
@@ -132,8 +159,8 @@ async function definirResultadoDoCha(sexo) {
  * Remove o palpite de um nome (ex.: quem digitou o nome do bebê); devolve false se não existir.
  * Ex.: await removerPalpiteDoCha("Mathias");
  */
-async function removerPalpiteDoCha(nome) {
-  const removido = await database.query({
+async function removerPalpiteDoCha(nome, sala = SALA_DA_FESTA) {
+  const removido = await consultarNaSala(sala, {
     text: "DELETE FROM cha_palpites WHERE nome_normalizado = $1;",
     values: [limparTexto(nome, 40).toLocaleLowerCase("pt-BR")],
   });
@@ -145,7 +172,7 @@ async function removerPalpiteDoCha(nome) {
  * nome atual não existir; lança EntradaInvalidaDoCha se o novo for vazio ou repetido.
  * Ex.: await renomearPalpiteDoCha("Mathias", "Tio Beto");
  */
-async function renomearPalpiteDoCha(nomeAtual, nomeNovo) {
+async function renomearPalpiteDoCha(nomeAtual, nomeNovo, sala = SALA_DA_FESTA) {
   const novo = limparTexto(nomeNovo, 40);
   if (!novo) {
     throw new EntradaInvalidaDoCha(
@@ -154,7 +181,7 @@ async function renomearPalpiteDoCha(nomeAtual, nomeNovo) {
   }
   const atual = limparTexto(nomeAtual, 40).toLocaleLowerCase("pt-BR");
   try {
-    const renomeado = await database.query({
+    const renomeado = await consultarNaSala(sala, {
       text: "UPDATE cha_palpites SET nome = $1, nome_normalizado = $2 WHERE nome_normalizado = $3;",
       values: [novo, novo.toLocaleLowerCase("pt-BR"), atual],
     });
@@ -166,7 +193,20 @@ async function renomearPalpiteDoCha(nomeAtual, nomeNovo) {
   }
 }
 
+/**
+ * Apaga palpites e resultado da sala de teste, para recomeçar o ensaio.
+ * Só existe para a sala de teste: a festa real não tem "zerar".
+ * Ex.: await zerarSalaDeTesteDoCha();
+ */
+async function zerarSalaDeTesteDoCha() {
+  await database.query("DELETE FROM cha_teste_palpites;");
+  await database.query("DELETE FROM cha_teste_resultado;");
+}
+
 export default {
+  SALA_DE_TESTE,
+  validarSalaDoCha,
+  zerarSalaDeTesteDoCha,
   iniciarContagemDoCha,
   renomearPalpiteDoCha,
   removerPalpiteDoCha,

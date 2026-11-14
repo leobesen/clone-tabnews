@@ -8,8 +8,13 @@ async function renomear(request, response) {
     return response.status(401).json({ error: "Token inválido." });
   }
   try {
+    const sala = chaRevelacao.validarSalaDoCha(request.query.sala);
     const { nome, novoNome } = request.body;
-    const renomeado = await chaRevelacao.renomearPalpiteDoCha(nome, novoNome);
+    const renomeado = await chaRevelacao.renomearPalpiteDoCha(
+      nome,
+      novoNome,
+      sala,
+    );
     return response.status(renomeado ? 200 : 404).json({});
   } catch (error) {
     if (!(error instanceof chaRevelacao.EntradaInvalidaDoCha)) throw error;

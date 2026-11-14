@@ -23,6 +23,12 @@ async function buscarEstado() {
   return resposta.json();
 }
 
+// restante_ms muda a cada instante durante uma contagem; fica fora da comparação.
+async function buscarFestaSemRelogio() {
+  const { restante_ms, ...festa } = await buscarEstado();
+  return festa;
+}
+
 test("palpite válido é gravado e trocar de ideia não duplica", async () => {
   const primeiro = await postar(URL_CHA, {
     nome: "  Vó   Ana ",
@@ -75,6 +81,18 @@ test("resultado exige token", async () => {
   const reaberto = await buscarEstado();
   expect(reaberto.resultado).toBeNull();
   expect(reaberto.contagem_iniciada).toBe(false);
+});
+
+test("sala de teste é isolada da festa", async () => {
+  const URL_TESTE = `${URL_CHA}?sala=teste`;
+  const ensaio = { nome: "Ensaio", palpite: "menina", segredo: SEGREDO };
+  expect((await postar(URL_TESTE, ensaio)).status).toBe(201);
+
+  const sala = await (await fetch(URL_TESTE)).json();
+  expect(sala.palpites.map((p) => p.nome)).toEqual(["Ensaio"]);
+  const festa = (await buscarEstado()).palpites.map((p) => p.nome);
+  expect(festa).not.toContain("Ensaio");
+  expect((await fetch(`${URL_CHA}?sala=outra`)).status).toBe(400);
 });
 
 // O token não é versionado: rode com CHA_TOKEN_ADMIN=<token> npm test.
@@ -152,6 +170,24 @@ testeComToken("contagem encerra os palpites sem revelar o sexo", async () => {
   expect(estado.restante_ms).toBeGreaterThan(0);
   const atrasado = { nome: "Tio", palpite: "menina", segredo: SEGREDO };
   expect((await postar(URL_CHA, atrasado)).status).toBe(409);
+});
+
+testeComToken("contagem e zerar do teste não mexem na festa", async () => {
+  const URL_ADMIN = `${URL_CHA}/resultado`;
+  const antes = await buscarFestaSemRelogio();
+  const contagem = { token: TOKEN_ADMIN, contagem: true };
+  expect((await postar(`${URL_ADMIN}?sala=teste`, contagem)).status).toBe(200);
+  const sala = await (await fetch(`${URL_CHA}?sala=teste`)).json();
+  expect(sala.contagem_iniciada).toBe(true);
+  expect(await buscarFestaSemRelogio()).toEqual(antes);
+
+  const zerar = { token: TOKEN_ADMIN, zerar: true };
+  expect((await postar(URL_ADMIN, zerar)).status).toBe(400);
+  expect((await postar(`${URL_ADMIN}?sala=teste`, zerar)).status).toBe(200);
+  const zerada = await (await fetch(`${URL_CHA}?sala=teste`)).json();
+  expect(zerada.palpites).toEqual([]);
+  expect(zerada.contagem_iniciada).toBe(false);
+  expect(await buscarFestaSemRelogio()).toEqual(antes);
 });
 
 testeComToken("revelar é imediato e desfazer reabre os palpites", async () => {

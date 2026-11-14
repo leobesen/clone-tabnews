@@ -22,6 +22,11 @@ const EU_VAZIO = { nome: "", palpite: null, segredo: "" };
 // Quem já votou neste aparelho e só quer acompanhar o placar.
 export const ESPECTADOR = { ...EU_VAZIO, espectador: true };
 
+// A sala "teste" fala com as tabelas de ensaio; a festa real não leva parâmetro.
+function urlDaApiDoCha(sala, caminho = "") {
+  return `/api/v1/cha${caminho}${sala === "teste" ? "?sala=teste" : ""}`;
+}
+
 function postarJson(url, corpo) {
   return fetch(url, {
     method: "POST",
@@ -32,11 +37,11 @@ function postarJson(url, corpo) {
 
 // ritmoNormal: intervalo de consulta em ms; a TV usa 1000 para acompanhar o
 // toque do Leo quase na hora.
-export function useEstadoDoCha(ritmoNormal = 3000) {
+export function useEstadoDoCha(ritmoNormal = 3000, sala = "festa") {
   const [estado, setEstado] = useState(null);
   const recarregar = useCallback(async () => {
     try {
-      const resposta = await fetch("/api/v1/cha");
+      const resposta = await fetch(urlDaApiDoCha(sala));
       if (!resposta.ok) return;
       const corpo = await resposta.json();
       const revelaEm =
@@ -45,7 +50,7 @@ export function useEstadoDoCha(ritmoNormal = 3000) {
     } catch {
       // Wi-Fi de festa oscila: mantém o último estado e tenta no próximo ciclo.
     }
-  }, []);
+  }, [sala]);
   // Com a caixa aberta todos olham para a tela: consulta mais rápida para a
   // revelação aparecer em cerca de 1 segundo depois do toque do Leo.
   const ritmo = estado?.contagem_iniciada ? 1000 : ritmoNormal;
@@ -57,24 +62,29 @@ export function useEstadoDoCha(ritmoNormal = 3000) {
   return [estado, recarregar];
 }
 
-function useEuSalvo() {
+// Chave própria por sala: ensaiar em /cha/teste não apaga quem a pessoa é na festa.
+function useEuSalvo(sala) {
+  const chave = sala === "teste" ? `${CHAVE_LOCAL}-teste` : CHAVE_LOCAL;
   const [eu, setEu] = useState(EU_VAZIO);
   useEffect(() => {
     try {
-      const salvo = JSON.parse(localStorage.getItem(CHAVE_LOCAL));
+      const salvo = JSON.parse(localStorage.getItem(chave));
       if (salvo) setEu({ ...EU_VAZIO, ...salvo });
     } catch {
       // Sem localStorage (aba anônima): o convidado só digita o nome de novo.
     }
-  }, []);
-  const salvarEu = useCallback((novo) => {
-    setEu(novo);
-    try {
-      localStorage.setItem(CHAVE_LOCAL, JSON.stringify(novo));
-    } catch {
-      // Idem acima.
-    }
-  }, []);
+  }, [chave]);
+  const salvarEu = useCallback(
+    (novo) => {
+      setEu(novo);
+      try {
+        localStorage.setItem(chave, JSON.stringify(novo));
+      } catch {
+        // Idem acima.
+      }
+    },
+    [chave],
+  );
   return [eu, salvarEu];
 }
 
@@ -350,10 +360,10 @@ function Revelacao({ palpites, resultado, eu }) {
 
 // Antes da contagem só existe o botão de iniciar; os de revelar aparecem depois,
 // para ninguém revelar por engano antes de a caixa ser aberta.
-function PainelDoLeo({ token, estado, aoMudar }) {
+function PainelDoLeo({ token, estado, aoMudar, sala }) {
   async function enviar(corpo, pergunta) {
     if (!window.confirm(pergunta)) return;
-    const resposta = await postarJson("/api/v1/cha/resultado", {
+    const resposta = await postarJson(urlDaApiDoCha(sala, "/resultado"), {
       token,
       ...corpo,
     });
@@ -368,6 +378,15 @@ function PainelDoLeo({ token, estado, aoMudar }) {
         <button onClick={() => enviar({ contagem: true }, pergunta)}>
           Iniciar contagem regressiva
         </button>
+        {sala === "teste" && (
+          <button
+            onClick={() =>
+              enviar({ zerar: true }, "Apagar todos os palpites de TESTE?")
+            }
+          >
+            Zerar teste
+          </button>
+        )}
         <small>Toque num nome do placar (✎) para corrigir ou remover.</small>
       </aside>
     );
@@ -393,32 +412,27 @@ function PainelDoLeo({ token, estado, aoMudar }) {
 }
 
 // Admin: corrige o nome de quem votou errado; nome vazio remove o voto.
-async function editarNomeDoPalpite(token, nome) {
+async function editarNomeDoPalpite(token, nome, sala) {
   const aviso = `Corrigir o nome de "${nome}".\nPara REMOVER o voto, apague tudo e confirme.`;
   const novoNome = window.prompt(aviso, nome);
   if (novoNome === null || novoNome.trim() === nome) return;
   const remover = !novoNome.trim();
   if (remover && !window.confirm(`Remover o voto de "${nome}"?`)) return;
   const resposta = await postarJson(
-    `/api/v1/cha/${remover ? "remover" : "renomear"}`,
+    urlDaApiDoCha(sala, remover ? "/remover" : "/renomear"),
     { token, nome, novoNome },
   );
   if (!resposta.ok)
     window.alert("Não deu certo. Já existe alguém com esse nome?");
 }
 
-function gravarPalpiteNaApi(corpo) {
-  return postarJson("/api/v1/cha", corpo);
-}
-
-// enviarPalpite é injetável para a página /cha/teste simular votos sem gravar nada.
 export function TelaDoCha({
   estado,
   eu,
   salvarEu,
   recarregar,
   aoEditar,
-  enviarPalpite = gravarPalpiteNaApi,
+  sala = "festa",
   somenteAssistir = false,
 }) {
   const contagem = useContagem(estado?.revelaEm);
@@ -428,7 +442,10 @@ export function TelaDoCha({
   );
   const [erro, setErro] = useState("");
   async function apostar(palpite) {
-    const resposta = await enviarPalpite({ ...eu, palpite }).catch(() => null);
+    const resposta = await postarJson(urlDaApiDoCha(sala), {
+      ...eu,
+      palpite,
+    }).catch(() => null);
     await recarregar();
     const { id } = resposta?.ok ? await resposta.json() : {};
     if (resposta?.ok) salvarEu({ ...eu, palpite, id, anterior: undefined });
@@ -521,28 +538,47 @@ export function PaginaDoCha({ titulo, classe = "", children }) {
   );
 }
 
-function Cha() {
-  const [estado, recarregar] = useEstadoDoCha();
-  const [eu, salvarEu] = useEuSalvo();
+// Marca visível nas páginas de ensaio, para ninguém confundir com a festa real.
+export function SeloDeTeste({ sala }) {
+  if (sala !== "teste") return null;
+  return <p className="cha-selo-teste">TESTE</p>;
+}
+
+/**
+ * Página dos convidados (e do admin, com ?admin=token) para uma sala.
+ * Ex.: <ChaDosConvidados sala="teste" />
+ */
+export function ChaDosConvidados({ sala = "festa" }) {
+  const [estado, recarregar] = useEstadoDoCha(3000, sala);
+  const [eu, salvarEu] = useEuSalvo(sala);
   const token = useRouter().query.admin;
+  const editar = (nome) =>
+    editarNomeDoPalpite(token, nome, sala).then(recarregar);
   return (
     <PaginaDoCha titulo="Mathias ou Serena? · Chá revelação">
+      <SeloDeTeste sala={sala} />
       <TelaDoCha
         estado={estado}
         eu={eu}
         salvarEu={salvarEu}
         recarregar={recarregar}
-        aoEditar={
-          token
-            ? (nome) => editarNomeDoPalpite(token, nome).then(recarregar)
-            : null
-        }
+        sala={sala}
+        aoEditar={token ? editar : null}
       />
       {token && estado && (
-        <PainelDoLeo token={token} estado={estado} aoMudar={recarregar} />
+        <PainelDoLeo
+          token={token}
+          estado={estado}
+          aoMudar={recarregar}
+          sala={sala}
+        />
       )}
     </PaginaDoCha>
   );
+}
+
+function Cha() {
+  return <ChaDosConvidados />;
 }
 
 export default Cha;

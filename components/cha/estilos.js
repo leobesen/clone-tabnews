@@ -103,6 +103,7 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 .cha-painel button { flex: 1; padding: 0.8rem 0.4rem; border: 2px solid var(--creme); border-radius: 10px; color: var(--creme); font-weight: 700; }
 .cha-painel button:not([class]) { background: #55505c; }
 
+.cha-selo-teste { position: fixed; z-index: 12; top: 0.6rem; left: 0.6rem; margin: 0; padding: 0.2rem 0.7rem; border-radius: 999px; background: var(--sol); color: var(--tinta); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; }
 /* Página da TV: tudo maior, lado a lado em qualquer largura, sem rodapé. */
 .cha-tv .cha-disputa { flex-direction: row; background: var(--tinta); }
 .cha-tv .cha-metade { min-height: 100vh; }
@@ -122,6 +123,8 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 .cha-tv .cha-frase { display: none; }
 /* Som desligado: aviso grande no topo, alcançável pelo controle remoto. */
 .cha-tv .cha-som[aria-pressed="false"] { top: 3vh; right: 50%; transform: translateX(50%); font-size: 2.2vw; padding: 1vw 2.5vw; white-space: nowrap; }
+/* Com o som ligado a TV fica limpa, sem nenhum botão na tela. */
+.cha-tv .cha-som[aria-pressed="true"] { display: none; }
 .cha-tv .cha-som[aria-pressed="false"]::after { content: " · aperte qualquer tecla"; }
 
 @media (prefers-reduced-motion: reduce) {

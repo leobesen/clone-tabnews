@@ -7,8 +7,15 @@ async function remover(request, response) {
   if (!chaRevelacao.tokenAdminValido(request.body?.token)) {
     return response.status(401).json({ error: "Token inválido." });
   }
-  const removido = await chaRevelacao.removerPalpiteDoCha(request.body.nome);
-  return response.status(removido ? 200 : 404).json({});
+  try {
+    const sala = chaRevelacao.validarSalaDoCha(request.query.sala);
+    const { nome } = request.body;
+    const removido = await chaRevelacao.removerPalpiteDoCha(nome, sala);
+    return response.status(removido ? 200 : 404).json({});
+  } catch (error) {
+    if (!(error instanceof chaRevelacao.EntradaInvalidaDoCha)) throw error;
+    return response.status(400).json({ error: error.message });
+  }
 }
 
 export default remover;
