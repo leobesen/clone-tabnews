@@ -74,15 +74,20 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 
 .cha-suspense {
   position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: var(--creme); animation: cha-pisca 0.7s ease-in-out infinite alternate;
+  color: var(--creme);
+  /* Azul e rosa mesclados num degradê que desliza, em vez de piscar entre os dois. */
+  background: linear-gradient(120deg, var(--azul), var(--rosa), var(--azul));
+  background-size: 200% 200%; animation: cha-mesclar 5s ease-in-out infinite alternate;
 }
 .cha-suspense p { font-size: clamp(1.4rem, 5vmin, 3.5rem); margin: 0; text-align: center; }
-/* A espera pode durar: pulsa devagar para não cansar na TV. */
-.cha-espera { animation-duration: 2.5s; }
+/* Caixa ainda fechada: cor neutra (nem azul nem rosa) para não sugerir o resultado. */
+.cha-suspense.cha-espera { background: var(--sol); color: var(--tinta); animation: none; }
+.cha-suspense.cha-espera .cha-caixa { animation: cha-pulsar 1.4s ease-in-out infinite alternate; }
 .cha-suspense .cha-caixa { font-size: clamp(3rem, 15vmin, 11rem); text-align: center; padding: 0 1rem; }
 .cha-som { position: fixed; z-index: 11; top: 0.6rem; right: 0.6rem; padding: 0.4rem 0.8rem; border: 1px solid var(--creme); border-radius: 999px; background: var(--tinta); color: var(--creme); font-size: 0.85rem; }
 .cha-suspense strong { font-size: 45vmin; line-height: 1; animation: cha-surge 0.9s ease-out; }
-@keyframes cha-pisca { from { background: var(--azul); } to { background: var(--rosa); } }
+@keyframes cha-mesclar { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+@keyframes cha-pulsar { from { transform: scale(1); } to { transform: scale(1.06); } }
 @keyframes cha-surge { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 .cha-revelacao { position: relative; overflow: hidden; min-height: 100vh; min-height: 100dvh; padding: 3.5rem 1.25rem 7rem; text-align: center; color: var(--creme); }
@@ -129,7 +134,6 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 
 @media (prefers-reduced-motion: reduce) {
   .cha *, .cha { animation: none !important; transition: none !important; }
-  .cha-suspense { background: var(--tinta); }
 }
 `;
 
