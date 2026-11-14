@@ -163,7 +163,13 @@ function ListaDeNomes({ palpites, meuNome, aoEditar }) {
   );
 }
 
-function MetadeDoTime({ sexo, time, aoEscolher, meuNome, aoEditar }) {
+function porcentagem(parte, total) {
+  return total ? Math.round((parte / total) * 100) : 0;
+}
+
+// Antes da revelação, nomes só aparecem para o admin (aoEditar); o público vê
+// contagem e porcentagem. Os nomes de quem acertou saem na tela de revelação.
+function MetadeDoTime({ sexo, time, total, aoEscolher, meuNome, aoEditar }) {
   const { nome, significado } = TIMES[sexo];
   if (aoEscolher) {
     return (
@@ -183,10 +189,13 @@ function MetadeDoTime({ sexo, time, aoEscolher, meuNome, aoEditar }) {
       style={{ flexGrow: time.length + 1 }}
     >
       <strong>{nome}</strong>
+      <b className="cha-pct">{porcentagem(time.length, total)}%</b>
       <span>
         {time.length} {time.length === 1 ? "palpite" : "palpites"}
       </span>
-      <ListaDeNomes palpites={time} meuNome={meuNome} aoEditar={aoEditar} />
+      {aoEditar && (
+        <ListaDeNomes palpites={time} meuNome={meuNome} aoEditar={aoEditar} />
+      )}
     </section>
   );
 }
@@ -224,6 +233,7 @@ function Disputa({
           key={sexo}
           sexo={sexo}
           time={palpites.filter((p) => p.palpite === sexo)}
+          total={palpites.length}
           aoEscolher={votando ? aoEscolher : null}
           meuNome={eu.nome}
           aoEditar={aoEditar}
@@ -280,7 +290,8 @@ function Revelacao({ palpites, resultado, eu }) {
       <p>“{significado}”</p>
       <p className="cha-frase">{fraseParaMim(eu, resultado)}</p>
       <h2>
-        Acertaram ({acertaram.length} de {palpites.length})
+        {porcentagem(acertaram.length, palpites.length)}% acertaram (
+        {acertaram.length} de {palpites.length})
       </h2>
       <ListaDeNomes palpites={acertaram} meuNome={eu.nome} />
     </main>

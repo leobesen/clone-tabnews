@@ -44,6 +44,7 @@ body { margin: 0; }
   text-align: center; transition: flex-grow 0.8s ease;
 }
 .cha-metade strong { font-size: clamp(3rem, 15vw, 6rem); line-height: 1; }
+.cha-pct { font-size: clamp(1.8rem, 8vw, 3rem); line-height: 1.2; }
 .cha-metade small { margin-top: 0.8rem; padding: 0.3rem 0.9rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.85rem; }
 button.cha-metade:hover strong, button.cha-metade:active strong { transform: scale(1.06); }
 .cha-metade strong { transition: transform 0.2s ease; }
