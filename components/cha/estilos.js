@@ -40,13 +40,15 @@ body { margin: 0; }
 .cha-faixa button, .cha-rodape button { background: none; border: 0; color: inherit; text-decoration: underline; margin-left: 0.5rem; padding: 0.3rem; }
 .cha-rodape { margin: 0; padding: 0.6rem 1rem 1.2rem; text-align: center; color: var(--creme); display: flex; flex-wrap: wrap; justify-content: center; gap: 0.2rem 1rem; }
 .cha-rodape button { margin: 0; padding: 0.6rem; }
+/* Reserva a altura da onda no fim do lado de cima, para ela não cobrir os nomes (admin). */
+.cha-metade.cha-menino { padding-bottom: 4.4rem; }
 .cha-onda { position: absolute; left: 0; right: 0; bottom: calc(100% - 1px); height: 2.4rem; overflow: hidden; pointer-events: none; }
 /* Camada de trás mais clara e translúcida; a da frente é o rosa cheio, para emendar com a seção. */
 .cha-onda svg { position: absolute; left: 0; bottom: 0; width: 200%; height: 100%; fill: var(--rosa); opacity: 0.55; filter: brightness(1.25); animation: cha-ondular 14s linear infinite reverse; }
 .cha-onda svg + svg { height: 70%; opacity: 1; filter: none; animation: cha-ondular 9s linear infinite; }
 @keyframes cha-ondular { to { transform: translateX(-50%); } }
 .cha-metade {
-  position: relative; flex: 1 1 0; min-height: 30dvh; padding: 1.5rem 1rem; border: 0; color: var(--creme);
+  position: relative; flex: 1 0 auto; min-height: 30dvh; padding: 1.5rem 1rem; border: 0; color: var(--creme);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem;
   text-align: center; transition: flex-grow 0.8s ease;
 }
@@ -65,6 +67,7 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
   .cha-disputa { background: var(--tinta); }
   /* Lado a lado não há onda: a divisa vira um degradê do azul para o rosa. */
   .cha-onda { display: none; }
+  .cha-metade.cha-menino { padding-bottom: 1.5rem; }
   .cha-metade.cha-menina { background: linear-gradient(90deg, var(--azul), var(--rosa) 7rem); }
   .cha-metade { min-height: calc(100vh - 3.4rem); min-height: calc(100dvh - 3.4rem); }
 }
