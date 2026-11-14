@@ -181,6 +181,15 @@ testeComToken("contagem e zerar do teste não mexem na festa", async () => {
   expect(sala.contagem_iniciada).toBe(true);
   expect(await buscarFestaSemRelogio()).toEqual(antes);
 
+  const copiar = { token: TOKEN_ADMIN, copiar: true };
+  expect((await postar(URL_ADMIN, copiar)).status).toBe(400);
+  expect((await postar(`${URL_ADMIN}?sala=teste`, copiar)).status).toBe(200);
+  const copia = await (await fetch(`${URL_CHA}?sala=teste`)).json();
+  const semId = ({ nome, palpite }) => ({ nome, palpite });
+  expect(copia.palpites.map(semId)).toEqual(antes.palpites.map(semId));
+  expect(copia.contagem_iniciada).toBe(false);
+  expect(await buscarFestaSemRelogio()).toEqual(antes);
+
   const zerar = { token: TOKEN_ADMIN, zerar: true };
   expect((await postar(URL_ADMIN, zerar)).status).toBe(400);
   expect((await postar(`${URL_ADMIN}?sala=teste`, zerar)).status).toBe(200);

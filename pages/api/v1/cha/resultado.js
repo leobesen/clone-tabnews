@@ -1,11 +1,12 @@
 import chaRevelacao from "models/chaRevelacao.js";
 
-async function aplicarAcaoDoAdmin({ contagem, zerar, sexo }, sala) {
-  if (zerar && sala !== chaRevelacao.SALA_DE_TESTE) {
+async function aplicarAcaoDoAdmin({ contagem, zerar, copiar, sexo }, sala) {
+  if ((zerar || copiar) && sala !== chaRevelacao.SALA_DE_TESTE) {
     throw new chaRevelacao.EntradaInvalidaDoCha(
-      `Zerar só existe na sala de teste; recebido sala ${JSON.stringify(sala)}.`,
+      `Zerar e copiar só existem na sala de teste; recebido sala ${JSON.stringify(sala)}.`,
     );
   }
+  if (copiar) return chaRevelacao.copiarFestaParaTesteDoCha();
   if (zerar) return chaRevelacao.zerarSalaDeTesteDoCha();
   if (contagem) return chaRevelacao.iniciarContagemDoCha(sala);
   return chaRevelacao.definirResultadoDoCha(sexo, sala);

@@ -203,7 +203,26 @@ async function zerarSalaDeTesteDoCha() {
   await database.query("DELETE FROM cha_teste_resultado;");
 }
 
+/**
+ * Recomeça a sala de teste com uma cópia dos palpites reais da festa, para o
+ * ensaio mostrar o placar de verdade. A festa só é lida; os segredos não são
+ * copiados, então nenhum aparelho real passa a controlar um palpite de teste.
+ * Ex.: await copiarFestaParaTesteDoCha();
+ */
+async function copiarFestaParaTesteDoCha() {
+  await database.query(`
+    BEGIN;
+    DELETE FROM cha_teste_resultado;
+    DELETE FROM cha_teste_palpites;
+    INSERT INTO cha_teste_palpites (nome, nome_normalizado, palpite, segredo, created_at)
+      SELECT nome, nome_normalizado, palpite, md5(random()::text), created_at
+      FROM cha_palpites ORDER BY created_at, id;
+    COMMIT;
+  `);
+}
+
 export default {
+  copiarFestaParaTesteDoCha,
   SALA_DE_TESTE,
   validarSalaDoCha,
   zerarSalaDeTesteDoCha,

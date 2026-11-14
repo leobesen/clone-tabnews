@@ -358,6 +358,22 @@ function Revelacao({ palpites, resultado, eu }) {
   );
 }
 
+// Só no admin de /cha/teste: recomeça o ensaio com os votos reais ou vazio.
+function BotoesDaSalaDeTeste({ aoEnviar }) {
+  const copiar = "Recomeçar o TESTE com uma cópia dos votos reais?";
+  const zerar = "Apagar todos os palpites de TESTE?";
+  return (
+    <>
+      <button onClick={() => aoEnviar({ copiar: true }, copiar)}>
+        Copiar votos reais
+      </button>
+      <button onClick={() => aoEnviar({ zerar: true }, zerar)}>
+        Zerar teste
+      </button>
+    </>
+  );
+}
+
 // Antes da contagem só existe o botão de iniciar; os de revelar aparecem depois,
 // para ninguém revelar por engano antes de a caixa ser aberta.
 function PainelDoLeo({ token, estado, aoMudar, sala }) {
@@ -378,15 +394,7 @@ function PainelDoLeo({ token, estado, aoMudar, sala }) {
         <button onClick={() => enviar({ contagem: true }, pergunta)}>
           Iniciar contagem regressiva
         </button>
-        {sala === "teste" && (
-          <button
-            onClick={() =>
-              enviar({ zerar: true }, "Apagar todos os palpites de TESTE?")
-            }
-          >
-            Zerar teste
-          </button>
-        )}
+        {sala === "teste" && <BotoesDaSalaDeTeste aoEnviar={enviar} />}
         <small>Toque num nome do placar (✎) para corrigir ou remover.</small>
       </aside>
     );
