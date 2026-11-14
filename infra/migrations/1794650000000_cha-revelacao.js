@@ -10,6 +10,7 @@ exports.up = (pgm) => {
       nome_normalizado varchar(40) NOT NULL UNIQUE,
       palpite varchar(6) NOT NULL CHECK (palpite IN ('menino', 'menina')),
       recado varchar(140) NOT NULL DEFAULT '',
+      segredo varchar(64) NOT NULL,
       created_at timestamptz NOT NULL DEFAULT now()
     );
     -- unica_linha garante no máximo um resultado gravado.

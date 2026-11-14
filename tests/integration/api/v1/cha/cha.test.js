@@ -8,6 +8,8 @@ beforeAll(async () => {
   await fetch("http://localhost:3000/api/v1/migrations", { method: "POST" });
 });
 
+const SEGREDO = "segredo-de-teste-0001";
+
 function postar(url, corpo) {
   return fetch(url, {
     method: "POST",
@@ -26,9 +28,14 @@ test("palpite válido é gravado e trocar de ideia não duplica", async () => {
     nome: "  Vó   Ana ",
     palpite: "menina",
     recado: "Te amo!",
+    segredo: SEGREDO,
   });
   expect(primeiro.status).toBe(201);
-  await postar(URL_CHA, { nome: "vó ana", palpite: "menino" });
+  await postar(URL_CHA, {
+    nome: "vó ana",
+    palpite: "menino",
+    segredo: SEGREDO,
+  });
 
   const estado = await buscarEstado();
   expect(estado.resultado).toBeNull();
@@ -37,11 +44,26 @@ test("palpite válido é gravado e trocar de ideia não duplica", async () => {
   ]);
 });
 
+test("outro aparelho não troca o palpite de um nome já usado", async () => {
+  const intruso = await postar(URL_CHA, {
+    nome: "Vó Ana",
+    palpite: "menina",
+    segredo: "segredo-de-outro-aparelho",
+  });
+  expect(intruso.status).toBe(409);
+  expect((await buscarEstado()).palpites[0].palpite).toBe("menino");
+});
+
 test("palpite inválido retorna 400", async () => {
-  const semNome = await postar(URL_CHA, { nome: "  ", palpite: "menino" });
-  expect(semNome.status).toBe(400);
-  const sexoErrado = await postar(URL_CHA, { nome: "Tio", palpite: "gato" });
-  expect(sexoErrado.status).toBe(400);
+  const validos = { nome: "Tio", palpite: "menino", segredo: SEGREDO };
+  for (const errado of [
+    { nome: "  " },
+    { palpite: "gato" },
+    { segredo: "x" },
+  ]) {
+    const resposta = await postar(URL_CHA, { ...validos, ...errado });
+    expect(resposta.status).toBe(400);
+  }
 });
 
 test("resultado exige token", async () => {
@@ -66,7 +88,11 @@ testeComToken("revelar encerra os palpites e desfazer reabre", async () => {
   const estado = await buscarEstado();
   expect(estado.resultado).toBe("menina");
   expect(estado.restante_ms).toBeGreaterThan(0);
-  const atrasado = await postar(URL_CHA, { nome: "Tio", palpite: "menina" });
+  const atrasado = await postar(URL_CHA, {
+    nome: "Tio",
+    palpite: "menina",
+    segredo: SEGREDO,
+  });
   expect(atrasado.status).toBe(409);
 
   await postar(`${URL_CHA}/resultado`, { token: TOKEN_ADMIN, sexo: null });

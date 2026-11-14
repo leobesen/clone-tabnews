@@ -2,7 +2,7 @@ const estilosDoCha = `
 body { margin: 0; }
 .cha {
   --azul: #1d3f8f; --rosa: #c8376a; --creme: #fdf6ec; --tinta: #2a2233; --sol: #ffd166;
-  min-height: 100dvh; background: var(--creme); color: var(--tinta);
+  min-height: 100vh; min-height: 100dvh; background: var(--creme); color: var(--tinta);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.5;
 }
 .cha *, .cha *::before { box-sizing: border-box; }
@@ -31,7 +31,7 @@ body { margin: 0; }
 .cha-aviso { color: #8f2a00; font-size: 0.9rem; margin: 0; }
 .cha-erro { background: var(--sol); text-align: center; padding: 0.5rem; }
 
-.cha-disputa { display: flex; flex-direction: column; min-height: 100dvh; }
+.cha-disputa { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 .cha-faixa { margin: 0; padding: 0.9rem 1rem; text-align: center; background: var(--tinta); color: var(--creme); }
 .cha-faixa button { background: none; border: 0; color: inherit; text-decoration: underline; margin-left: 0.5rem; padding: 0.3rem; }
 .cha-metade {
@@ -49,7 +49,7 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 @media (min-width: 720px) {
   .cha-disputa { flex-direction: row; flex-wrap: wrap; }
   .cha-faixa { flex-basis: 100%; }
-  .cha-metade { min-height: calc(100dvh - 3.4rem); }
+  .cha-metade { min-height: calc(100vh - 3.4rem); min-height: calc(100dvh - 3.4rem); }
 }
 
 .cha-suspense {
@@ -61,7 +61,7 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 @keyframes cha-pisca { from { background: var(--azul); } to { background: var(--rosa); } }
 @keyframes cha-surge { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-.cha-revelacao { position: relative; overflow: hidden; min-height: 100dvh; padding: 3.5rem 1.25rem 7rem; text-align: center; color: var(--creme); }
+.cha-revelacao { position: relative; overflow: hidden; min-height: 100vh; min-height: 100dvh; padding: 3.5rem 1.25rem 7rem; text-align: center; color: var(--creme); }
 .cha-revelacao h1 { font-size: clamp(4rem, 23vw, 10rem); line-height: 1; margin: 0.5rem 0 0; animation: cha-surge 1.2s cubic-bezier(0.2, 1.4, 0.4, 1); }
 .cha-sobrenome { font-style: italic; font-size: clamp(1.6rem, 8vw, 3rem); margin: 0; }
 .cha-frase { font-size: 1.25rem; font-weight: 700; margin: 2rem 0; }

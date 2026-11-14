@@ -17,7 +17,7 @@ const TIMES = {
 };
 const SEXOS = Object.keys(TIMES);
 const CHAVE_LOCAL = "cha-revelacao-eu";
-const EU_VAZIO = { nome: "", palpite: null, recado: "" };
+const EU_VAZIO = { nome: "", palpite: null, recado: "", segredo: "" };
 
 function postarJson(url, corpo) {
   return fetch(url, {
@@ -297,11 +297,11 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
       () => null,
     );
     if (resposta?.ok) salvarEu({ ...eu, palpite });
-    setErro(
-      resposta?.ok || resposta?.status === 409
-        ? ""
-        : "Não consegui salvar. Tente de novo.",
-    );
+    const motivo =
+      resposta?.status === 409
+        ? "Esse nome já está em uso. Recarregue a página e use outro."
+        : "Não consegui salvar. Tente de novo.";
+    setErro(resposta?.ok ? "" : motivo);
     recarregar();
   }
   if (!estado) return <main className="cha-entrada">Carregando…</main>;
@@ -311,7 +311,9 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
     return (
       <Entrada
         palpites={estado.palpites}
-        aoEntrar={(dados) => salvarEu({ ...EU_VAZIO, ...dados })}
+        aoEntrar={(dados) =>
+          salvarEu({ ...EU_VAZIO, ...dados, segredo: crypto.randomUUID() })
+        }
       />
     );
   }
