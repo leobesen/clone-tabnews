@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import estilosDoCha from "components/cha/estilos.js";
 
-const TIMES = {
+export const TIMES = {
   menino: {
     nome: "Mathias",
     significado: "presente de Deus",
@@ -363,13 +363,23 @@ async function editarNomeDoPalpite(token, nome) {
     window.alert("Não deu certo. Já existe alguém com esse nome?");
 }
 
-function TelaDoCha({ estado, eu, salvarEu, recarregar, aoEditar }) {
+function gravarPalpiteNaApi(corpo) {
+  return postarJson("/api/v1/cha", corpo);
+}
+
+// enviarPalpite é injetável para a página /cha/teste simular votos sem gravar nada.
+export function TelaDoCha({
+  estado,
+  eu,
+  salvarEu,
+  recarregar,
+  aoEditar,
+  enviarPalpite = gravarPalpiteNaApi,
+}) {
   const contagem = useContagem(estado?.revelaEm);
   const [erro, setErro] = useState("");
   async function apostar(palpite) {
-    const resposta = await postarJson("/api/v1/cha", { ...eu, palpite }).catch(
-      () => null,
-    );
+    const resposta = await enviarPalpite({ ...eu, palpite }).catch(() => null);
     await recarregar();
     const { id } = resposta?.ok ? await resposta.json() : {};
     if (resposta?.ok) salvarEu({ ...eu, palpite, id, anterior: undefined });
