@@ -22,6 +22,7 @@ const PALPITES_DE_TESTE = [
 const ESTADO_INICIAL = {
   palpites: PALPITES_DE_TESTE,
   resultado: null,
+  contagem_iniciada: false,
   revelaEm: 0,
 };
 
@@ -32,7 +33,19 @@ function comPalpite(palpites, { nome, palpite }) {
   return [...outros, { id, nome, palpite }];
 }
 
-function BarraDeTeste({ resultado, aoRevelar }) {
+const AVISO_DE_TESTE =
+  "PÁGINA DE TESTE: nada aqui é gravado nem aparece para os convidados.";
+
+// Mesma sequência do painel real: iniciar contagem, depois revelar ou desfazer.
+function BarraDeTeste({ estado, aoIniciar, aoRevelar }) {
+  if (!estado.contagem_iniciada && !estado.resultado) {
+    return (
+      <aside className="cha-painel">
+        <button onClick={aoIniciar}>Iniciar contagem regressiva</button>
+        <small>{AVISO_DE_TESTE}</small>
+      </aside>
+    );
+  }
   return (
     <aside className="cha-painel">
       {Object.keys(TIMES).map((sexo) => (
@@ -44,10 +57,8 @@ function BarraDeTeste({ resultado, aoRevelar }) {
           {TIMES[sexo].grito}
         </button>
       ))}
-      {resultado && <button onClick={() => aoRevelar(null)}>Desfazer</button>}
-      <small>
-        PÁGINA DE TESTE: nada aqui é gravado nem aparece para os convidados.
-      </small>
+      <button onClick={() => aoRevelar(null)}>Desfazer</button>
+      <small>{AVISO_DE_TESTE}</small>
     </aside>
   );
 }
@@ -61,9 +72,13 @@ function ChaDeTeste() {
     const { id } = palpites[palpites.length - 1];
     return { ok: true, json: async () => ({ id }) };
   }
+  function iniciarContagem() {
+    const revelaEm = Date.now() + SUSPENSE_MS;
+    setEstado({ ...estado, contagem_iniciada: true, revelaEm });
+  }
+  // resultado null = desfazer: volta para a votação.
   function revelar(resultado) {
-    const revelaEm = resultado ? Date.now() + SUSPENSE_MS : 0;
-    setEstado({ ...estado, resultado, revelaEm });
+    setEstado({ ...estado, resultado, contagem_iniciada: false, revelaEm: 0 });
   }
   return (
     <div className="cha">
@@ -83,7 +98,11 @@ function ChaDeTeste() {
         recarregar={async () => {}}
         enviarPalpite={simularPalpite}
       />
-      <BarraDeTeste resultado={estado.resultado} aoRevelar={revelar} />
+      <BarraDeTeste
+        estado={estado}
+        aoIniciar={iniciarContagem}
+        aoRevelar={revelar}
+      />
       <style dangerouslySetInnerHTML={{ __html: estilosDoCha }} />
     </div>
   );

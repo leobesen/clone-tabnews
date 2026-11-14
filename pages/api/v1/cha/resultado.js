@@ -8,7 +8,9 @@ async function resultado(request, response) {
     return response.status(401).json({ error: "Token inválido." });
   }
   try {
-    await chaRevelacao.definirResultadoDoCha(request.body.sexo);
+    const { contagem, sexo } = request.body;
+    if (contagem) await chaRevelacao.iniciarContagemDoCha();
+    else await chaRevelacao.definirResultadoDoCha(sexo);
     return response.status(200).json({});
   } catch (error) {
     if (!(error instanceof chaRevelacao.EntradaInvalidaDoCha)) throw error;

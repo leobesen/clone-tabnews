@@ -72,7 +72,9 @@ test("resultado exige token", async () => {
     sexo: "menina",
   });
   expect(resposta.status).toBe(401);
-  expect((await buscarEstado()).resultado).toBeNull();
+  const reaberto = await buscarEstado();
+  expect(reaberto.resultado).toBeNull();
+  expect(reaberto.contagem_iniciada).toBe(false);
 });
 
 // O token não é versionado: rode com CHA_TOKEN_ADMIN=<token> npm test.
@@ -140,7 +142,19 @@ testeComToken(
   },
 );
 
-testeComToken("revelar encerra os palpites e desfazer reabre", async () => {
+testeComToken("contagem encerra os palpites sem revelar o sexo", async () => {
+  const pedido = { token: TOKEN_ADMIN, contagem: true };
+  expect((await postar(`${URL_CHA}/resultado`, pedido)).status).toBe(200);
+
+  const estado = await buscarEstado();
+  expect(estado.resultado).toBeNull();
+  expect(estado.contagem_iniciada).toBe(true);
+  expect(estado.restante_ms).toBeGreaterThan(0);
+  const atrasado = { nome: "Tio", palpite: "menina", segredo: SEGREDO };
+  expect((await postar(URL_CHA, atrasado)).status).toBe(409);
+});
+
+testeComToken("revelar é imediato e desfazer reabre os palpites", async () => {
   const revelar = await postar(`${URL_CHA}/resultado`, {
     token: TOKEN_ADMIN,
     sexo: "menina",
@@ -149,7 +163,8 @@ testeComToken("revelar encerra os palpites e desfazer reabre", async () => {
 
   const estado = await buscarEstado();
   expect(estado.resultado).toBe("menina");
-  expect(estado.restante_ms).toBeGreaterThan(0);
+  expect(estado.contagem_iniciada).toBe(false);
+  expect(estado.restante_ms).toBe(0);
   const atrasado = await postar(URL_CHA, {
     nome: "Tio",
     palpite: "menina",
@@ -158,5 +173,7 @@ testeComToken("revelar encerra os palpites e desfazer reabre", async () => {
   expect(atrasado.status).toBe(409);
 
   await postar(`${URL_CHA}/resultado`, { token: TOKEN_ADMIN, sexo: null });
-  expect((await buscarEstado()).resultado).toBeNull();
+  const reaberto = await buscarEstado();
+  expect(reaberto.resultado).toBeNull();
+  expect(reaberto.contagem_iniciada).toBe(false);
 });

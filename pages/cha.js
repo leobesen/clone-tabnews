@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import estilosDoCha from "components/cha/estilos.js";
+import { useSomDoCha } from "components/cha/som.js";
 
 export const TIMES = {
   menino: {
@@ -43,11 +44,14 @@ function useEstadoDoCha() {
       // Wi-Fi de festa oscila: mantém o último estado e tenta no próximo ciclo.
     }
   }, []);
+  // Com a caixa aberta todos olham para a tela: consulta mais rápida para a
+  // revelação aparecer em cerca de 1 segundo depois do toque do Leo.
+  const ritmo = estado?.contagem_iniciada ? 1000 : 3000;
   useEffect(() => {
     recarregar();
-    const intervalo = setInterval(recarregar, 3000);
+    const intervalo = setInterval(recarregar, ritmo);
     return () => clearInterval(intervalo);
-  }, [recarregar]);
+  }, [recarregar, ritmo]);
   return [estado, recarregar];
 }
 
@@ -264,10 +268,35 @@ function Disputa({
 function Suspense({ contagem }) {
   return (
     <main className="cha-suspense" aria-live="assertive">
-      <p>É…</p>
+      <p>A caixa abre em…</p>
       <strong key={contagem}>{contagem}</strong>
     </main>
   );
+}
+
+// Contagem terminou: a família abre a caixa de balões e o Leo revela no painel.
+function AbramACaixa() {
+  return (
+    <main className="cha-suspense cha-espera" aria-live="assertive">
+      <p>É agora!</p>
+      <strong className="cha-caixa">Abram a caixa!</strong>
+      <p>De que cor são os balões?</p>
+    </main>
+  );
+}
+
+function BotaoDeSom({ ligado, aoAlternar }) {
+  return (
+    <button className="cha-som" aria-pressed={ligado} onClick={aoAlternar}>
+      {ligado ? "🔊 som ligado" : "🔇 ligar som"}
+    </button>
+  );
+}
+
+function faseDoCha(estado, contagem) {
+  if (estado?.resultado) return "revelado";
+  if (contagem > 0) return "contagem";
+  return estado?.contagem_iniciada ? "caixa" : "votando";
 }
 
 function Confete() {
@@ -316,12 +345,29 @@ function Revelacao({ palpites, resultado, eu }) {
   );
 }
 
-function PainelDoLeo({ token, resultado, aoMudar }) {
-  async function definir(sexo, pergunta) {
+// Antes da contagem só existe o botão de iniciar; os de revelar aparecem depois,
+// para ninguém revelar por engano antes de a caixa ser aberta.
+function PainelDoLeo({ token, estado, aoMudar }) {
+  async function enviar(corpo, pergunta) {
     if (!window.confirm(pergunta)) return;
-    const resposta = await postarJson("/api/v1/cha/resultado", { token, sexo });
+    const resposta = await postarJson("/api/v1/cha/resultado", {
+      token,
+      ...corpo,
+    });
     if (!resposta.ok) window.alert("Não deu certo: link de admin inválido.");
     aoMudar();
+  }
+  if (!estado.contagem_iniciada && !estado.resultado) {
+    const pergunta =
+      "Iniciar a contagem em todas as telas? A votação será encerrada.";
+    return (
+      <aside className="cha-painel">
+        <button onClick={() => enviar({ contagem: true }, pergunta)}>
+          Iniciar contagem regressiva
+        </button>
+        <small>Toque num nome do placar (✎) para corrigir ou remover.</small>
+      </aside>
+    );
   }
   return (
     <aside className="cha-painel">
@@ -330,20 +376,15 @@ function PainelDoLeo({ token, resultado, aoMudar }) {
           key={sexo}
           className={`cha-${sexo}`}
           onClick={() =>
-            definir(sexo, `Revelar para todos: ${TIMES[sexo].grito}`)
+            enviar({ sexo }, `Revelar para todos: ${TIMES[sexo].grito}`)
           }
         >
           {TIMES[sexo].grito}
         </button>
       ))}
-      {!resultado && (
-        <small>Toque num nome do placar (✎) para corrigir ou remover.</small>
-      )}
-      {resultado && (
-        <button onClick={() => definir(null, "Desfazer a revelação?")}>
-          Desfazer
-        </button>
-      )}
+      <button onClick={() => enviar({ sexo: null }, "Voltar para a votação?")}>
+        Desfazer
+      </button>
     </aside>
   );
 }
@@ -377,6 +418,10 @@ export function TelaDoCha({
   enviarPalpite = gravarPalpiteNaApi,
 }) {
   const contagem = useContagem(estado?.revelaEm);
+  const [somLigado, alternarSom] = useSomDoCha(
+    contagem,
+    faseDoCha(estado, contagem),
+  );
   const [erro, setErro] = useState("");
   async function apostar(palpite) {
     const resposta = await enviarPalpite({ ...eu, palpite }).catch(() => null);
@@ -404,8 +449,16 @@ export function TelaDoCha({
     }
   }, [estado, eu, salvarEu]);
   if (!estado) return <main className="cha-entrada">Carregando…</main>;
-  if (contagem > 0) return <Suspense contagem={contagem} />;
-  if (estado.resultado) return <Revelacao {...estado} eu={eu} />;
+  const botaoDeSom = <BotaoDeSom ligado={somLigado} aoAlternar={alternarSom} />;
+  const comSom = (tela) => (
+    <>
+      {botaoDeSom}
+      {tela}
+    </>
+  );
+  if (contagem > 0) return comSom(<Suspense contagem={contagem} />);
+  if (estado.resultado) return comSom(<Revelacao {...estado} eu={eu} />);
+  if (estado.contagem_iniciada) return comSom(<AbramACaixa />);
   const voltar = () => salvarEu(eu.anterior ?? ESPECTADOR);
   if (!eu.nome && !eu.espectador) {
     return (
@@ -420,6 +473,7 @@ export function TelaDoCha({
   }
   return (
     <>
+      {botaoDeSom}
       {erro && (
         <p className="cha-aviso cha-erro" role="alert">
           {erro}
@@ -467,11 +521,7 @@ function Cha() {
         }
       />
       {token && estado && (
-        <PainelDoLeo
-          token={token}
-          resultado={estado.resultado}
-          aoMudar={recarregar}
-        />
+        <PainelDoLeo token={token} estado={estado} aoMudar={recarregar} />
       )}
       <style dangerouslySetInnerHTML={{ __html: estilosDoCha }} />
     </div>

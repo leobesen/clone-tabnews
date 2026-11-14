@@ -45,6 +45,8 @@ function validarPalpite(corpo) {
 
 /**
  * Estado completo da brincadeira, consultado por todos os celulares.
+ * contagem_iniciada: a contagem foi disparada e a caixa ainda não foi revelada;
+ * restante_ms: quanto falta da contagem (0 depois que ela termina).
  * Ex.: const { palpites, resultado, restante_ms } = await buscarEstadoDoCha();
  */
 async function buscarEstadoDoCha() {
@@ -52,13 +54,16 @@ async function buscarEstadoDoCha() {
     "SELECT id, nome, palpite FROM cha_palpites ORDER BY created_at, id;",
   );
   const resultado = await database.query({
-    text: `SELECT sexo, GREATEST(0, $1 - EXTRACT(EPOCH FROM (now() - revelado_em)) * 1000)::int AS restante_ms
+    text: `SELECT sexo, CASE WHEN sexo IS NULL
+             THEN GREATEST(0, $1 - EXTRACT(EPOCH FROM (now() - revelado_em)) * 1000)::int
+             ELSE 0 END AS restante_ms
            FROM cha_resultado;`,
     values: [SUSPENSE_MS],
   });
   return {
     palpites: palpites.rows,
     resultado: resultado.rows[0]?.sexo ?? null,
+    contagem_iniciada: resultado.rows.length > 0 && !resultado.rows[0].sexo,
     restante_ms: resultado.rows[0]?.restante_ms ?? 0,
   };
 }
@@ -95,6 +100,18 @@ function tokenAdminValido(token) {
   if (typeof token !== "string") return false;
   const hash = createHash("sha256").update(token).digest();
   return timingSafeEqual(hash, Buffer.from(HASH_TOKEN_ADMIN, "hex"));
+}
+
+/**
+ * Dispara a contagem regressiva em todas as telas e encerra a votação, sem
+ * revelar nada: o sexo só entra depois que a caixa de balões é aberta.
+ * Ex.: await iniciarContagemDoCha();
+ */
+async function iniciarContagemDoCha() {
+  return database.query(
+    `INSERT INTO cha_resultado (sexo) VALUES (NULL)
+     ON CONFLICT (unica_linha) DO UPDATE SET sexo = NULL, revelado_em = now();`,
+  );
 }
 
 /**
@@ -150,6 +167,7 @@ async function renomearPalpiteDoCha(nomeAtual, nomeNovo) {
 }
 
 export default {
+  iniciarContagemDoCha,
   renomearPalpiteDoCha,
   removerPalpiteDoCha,
   EntradaInvalidaDoCha,

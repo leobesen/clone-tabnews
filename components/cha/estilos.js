@@ -76,7 +76,11 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
   position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: var(--creme); animation: cha-pisca 0.7s ease-in-out infinite alternate;
 }
-.cha-suspense p { font-size: 2rem; margin: 0; }
+.cha-suspense p { font-size: clamp(1.4rem, 5vmin, 3.5rem); margin: 0; text-align: center; }
+/* A espera pode durar: pulsa devagar para não cansar na TV. */
+.cha-espera { animation-duration: 2.5s; }
+.cha-suspense .cha-caixa { font-size: clamp(3rem, 15vmin, 11rem); text-align: center; padding: 0 1rem; }
+.cha-som { position: fixed; z-index: 11; top: 0.6rem; right: 0.6rem; padding: 0.4rem 0.8rem; border: 1px solid var(--creme); border-radius: 999px; background: var(--tinta); color: var(--creme); font-size: 0.85rem; }
 .cha-suspense strong { font-size: 45vmin; line-height: 1; animation: cha-surge 0.9s ease-out; }
 @keyframes cha-pisca { from { background: var(--azul); } to { background: var(--rosa); } }
 @keyframes cha-surge { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
