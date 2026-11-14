@@ -166,7 +166,7 @@ function MetadeDoTime({ sexo, time, aoEscolher, meuNome }) {
 }
 
 // O placar só aparece depois do voto, para ninguém ir na onda da maioria.
-function Disputa({ palpites, eu, aoEscolher, aoTrocar }) {
+function Disputa({ palpites, eu, aoEscolher, aoTrocar, aoOutraPessoa }) {
   const votando = !eu.palpite;
   return (
     <main className="cha-disputa">
@@ -175,6 +175,10 @@ function Disputa({ palpites, eu, aoEscolher, aoTrocar }) {
           ? `${eu.nome}, o que você acha que vem aí?`
           : `Palpite anotado, ${eu.nome}! Aguardando a revelação…`}
         {!votando && <button onClick={aoTrocar}>trocar palpite</button>}
+        {/* Crianças e quem está sem celular votam pelo aparelho de outra pessoa. */}
+        {!votando && (
+          <button onClick={aoOutraPessoa}>votar por outra pessoa</button>
+        )}
       </p>
       {SEXOS.map((sexo) => (
         <MetadeDoTime
@@ -312,6 +316,7 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
         eu={eu}
         aoEscolher={apostar}
         aoTrocar={() => salvarEu({ ...eu, palpite: null })}
+        aoOutraPessoa={() => salvarEu(EU_VAZIO)}
       />
     </>
   );
