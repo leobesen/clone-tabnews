@@ -35,11 +35,18 @@ body { margin: 0; }
 .cha-aviso { color: #8f2a00; font-size: 0.9rem; margin: 0; }
 .cha-erro { background: var(--sol); text-align: center; padding: 0.5rem; }
 
-.cha-disputa { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+.cha-disputa { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; background: var(--rosa); }
 .cha-faixa { margin: 0; padding: 0.9rem 1rem; text-align: center; background: var(--tinta); color: var(--creme); }
-.cha-faixa button { background: none; border: 0; color: inherit; text-decoration: underline; margin-left: 0.5rem; padding: 0.3rem; }
+.cha-faixa button, .cha-rodape button { background: none; border: 0; color: inherit; text-decoration: underline; margin-left: 0.5rem; padding: 0.3rem; }
+.cha-rodape { margin: 0; padding: 0.6rem 1rem 1.2rem; text-align: center; color: var(--creme); display: flex; flex-wrap: wrap; justify-content: center; gap: 0.2rem 1rem; }
+.cha-rodape button { margin: 0; padding: 0.6rem; }
+.cha-onda { position: absolute; left: 0; right: 0; bottom: calc(100% - 1px); height: 2.4rem; overflow: hidden; pointer-events: none; }
+/* Camada de trás mais clara e translúcida; a da frente é o rosa cheio, para emendar com a seção. */
+.cha-onda svg { position: absolute; left: 0; bottom: 0; width: 200%; height: 100%; fill: var(--rosa); opacity: 0.55; filter: brightness(1.25); animation: cha-ondular 14s linear infinite reverse; }
+.cha-onda svg + svg { height: 70%; opacity: 1; filter: none; animation: cha-ondular 9s linear infinite; }
+@keyframes cha-ondular { to { transform: translateX(-50%); } }
 .cha-metade {
-  flex: 1 1 0; min-height: 30dvh; padding: 1.5rem 1rem; border: 0; color: var(--creme);
+  position: relative; flex: 1 1 0; min-height: 30dvh; padding: 1.5rem 1rem; border: 0; color: var(--creme);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem;
   text-align: center; transition: flex-grow 0.8s ease;
 }
@@ -54,7 +61,11 @@ button.cha-metade:hover strong, button.cha-metade:active strong { transform: sca
 .cha-nomes .cha-eu { background: var(--creme); color: var(--tinta); font-weight: 700; }
 @media (min-width: 720px) {
   .cha-disputa { flex-direction: row; flex-wrap: wrap; }
-  .cha-faixa { flex-basis: 100%; }
+  .cha-faixa, .cha-rodape { flex-basis: 100%; }
+  .cha-disputa { background: var(--tinta); }
+  /* Lado a lado não há onda: a divisa vira um degradê do azul para o rosa. */
+  .cha-onda { display: none; }
+  .cha-metade.cha-menina { background: linear-gradient(90deg, var(--azul), var(--rosa) 7rem); }
   .cha-metade { min-height: calc(100vh - 3.4rem); min-height: calc(100dvh - 3.4rem); }
 }
 

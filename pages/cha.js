@@ -167,16 +167,33 @@ function porcentagem(parte, total) {
   return total ? Math.round((parte / total) * 100) : 0;
 }
 
+// Ondas animadas na cor de Serena, por cima do fim da metade de Mathias, para a
+// divisa entre os dois lados não ser uma linha reta.
+function OndaDivisoria() {
+  const onda = "M0 20 Q150 0 300 20 T600 20 T900 20 T1200 20 V40 H0 Z";
+  return (
+    <div className="cha-onda" aria-hidden="true">
+      {[0, 1].map((camada) => (
+        <svg key={camada} viewBox="0 0 1200 40" preserveAspectRatio="none">
+          <path d={onda} />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
 // Antes da revelação, nomes só aparecem para o admin (aoEditar); o público vê
 // contagem e porcentagem. Os nomes de quem acertou saem na tela de revelação.
-function MetadeDoTime({ sexo, time, total, aoEscolher, meuNome, aoEditar }) {
+function MetadeDoTime({ sexo, time, total, aoEscolher, eu, aoEditar }) {
   const { nome, significado } = TIMES[sexo];
+  const onda = sexo === SEXOS[1] && <OndaDivisoria />;
   if (aoEscolher) {
     return (
       <button
         className={`cha-metade cha-${sexo}`}
         onClick={() => aoEscolher(sexo)}
       >
+        {onda}
         <strong>{nome}</strong>
         <span>“{significado}”</span>
         <small>toque para apostar</small>
@@ -188,24 +205,21 @@ function MetadeDoTime({ sexo, time, total, aoEscolher, meuNome, aoEditar }) {
       className={`cha-metade cha-${sexo}`}
       style={{ flexGrow: time.length + 1 }}
     >
+      {onda}
       <strong>{nome}</strong>
       <b className="cha-pct">{porcentagem(time.length, total)}%</b>
       <span>
         {time.length} {time.length === 1 ? "palpite" : "palpites"}
       </span>
+      {eu.palpite === sexo && <small>seu palpite ✓</small>}
       {aoEditar && (
-        <ListaDeNomes palpites={time} meuNome={meuNome} aoEditar={aoEditar} />
+        <ListaDeNomes palpites={time} meuNome={eu.nome} aoEditar={aoEditar} />
       )}
     </section>
   );
 }
 
 // O placar só aparece depois do voto, para ninguém ir na onda da maioria.
-function fraseDaFaixa(eu, votando) {
-  if (votando) return `${eu.nome}, o que você acha que vem aí?`;
-  if (eu.espectador) return "Aguardando a revelação…";
-  return `Palpite anotado, ${eu.nome}! Aguardando a revelação…`;
-}
 
 function Disputa({
   palpites,
@@ -219,15 +233,12 @@ function Disputa({
   const votando = !eu.palpite && !eu.espectador;
   return (
     <main className="cha-disputa">
-      <p className="cha-faixa" aria-live="polite">
-        {fraseDaFaixa(eu, votando)}
-        {votando && aoVoltar && <button onClick={aoVoltar}>cancelar</button>}
-        {eu.palpite && <button onClick={aoTrocar}>trocar palpite</button>}
-        {/* Crianças e quem está sem celular votam pelo aparelho de outra pessoa. */}
-        {!votando && (
-          <button onClick={aoOutraPessoa}>votar por outra pessoa</button>
-        )}
-      </p>
+      {votando && (
+        <p className="cha-faixa" aria-live="polite">
+          {eu.nome}, o que você acha que vem aí?
+          {aoVoltar && <button onClick={aoVoltar}>cancelar</button>}
+        </p>
+      )}
       {SEXOS.map((sexo) => (
         <MetadeDoTime
           key={sexo}
@@ -235,10 +246,17 @@ function Disputa({
           time={palpites.filter((p) => p.palpite === sexo)}
           total={palpites.length}
           aoEscolher={votando ? aoEscolher : null}
-          meuNome={eu.nome}
+          eu={eu}
           aoEditar={aoEditar}
         />
       ))}
+      {/* Crianças e quem está sem celular votam pelo aparelho de outra pessoa. */}
+      {!votando && (
+        <p className="cha-rodape">
+          {eu.palpite && <button onClick={aoTrocar}>trocar palpite</button>}
+          <button onClick={aoOutraPessoa}>votar por outra pessoa</button>
+        </p>
+      )}
     </main>
   );
 }
