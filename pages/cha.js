@@ -18,6 +18,8 @@ const TIMES = {
 const SEXOS = Object.keys(TIMES);
 const CHAVE_LOCAL = "cha-revelacao-eu";
 const EU_VAZIO = { nome: "", palpite: null, segredo: "" };
+// Quem já votou neste aparelho e só quer acompanhar o placar.
+const ESPECTADOR = { ...EU_VAZIO, espectador: true };
 
 function postarJson(url, corpo) {
   return fetch(url, {
@@ -54,7 +56,7 @@ function useEuSalvo() {
   useEffect(() => {
     try {
       const salvo = JSON.parse(localStorage.getItem(CHAVE_LOCAL));
-      if (salvo?.nome) setEu({ ...EU_VAZIO, ...salvo });
+      if (salvo) setEu({ ...EU_VAZIO, ...salvo });
     } catch {
       // Sem localStorage (aba anônima): o convidado só digita o nome de novo.
     }
@@ -81,7 +83,7 @@ function useContagem(revelaEm) {
   return Math.max(0, Math.ceil((revelaEm - Date.now()) / 1000));
 }
 
-function Entrada({ palpites, aoEntrar }) {
+function Entrada({ palpites, aoEntrar, aoVoltar }) {
   const [nome, setNome] = useState("");
   const limpo = nome.trim().replace(/\s+/g, " ");
   const repetido = palpites.some(
@@ -137,6 +139,9 @@ function Entrada({ palpites, aoEntrar }) {
         )}
         <button type="submit">Continuar para o palpite</button>
       </form>
+      <button type="button" className="cha-voltar" onClick={aoVoltar}>
+        Já votei: voltar ao placar
+      </button>
     </main>
   );
 }
@@ -182,15 +187,27 @@ function MetadeDoTime({ sexo, time, aoEscolher, meuNome }) {
 }
 
 // O placar só aparece depois do voto, para ninguém ir na onda da maioria.
-function Disputa({ palpites, eu, aoEscolher, aoTrocar, aoOutraPessoa }) {
-  const votando = !eu.palpite;
+function fraseDaFaixa(eu, votando) {
+  if (votando) return `${eu.nome}, o que você acha que vem aí?`;
+  if (eu.espectador) return "Aguardando a revelação…";
+  return `Palpite anotado, ${eu.nome}! Aguardando a revelação…`;
+}
+
+function Disputa({
+  palpites,
+  eu,
+  aoEscolher,
+  aoTrocar,
+  aoOutraPessoa,
+  aoVoltar,
+}) {
+  const votando = !eu.palpite && !eu.espectador;
   return (
     <main className="cha-disputa">
       <p className="cha-faixa" aria-live="polite">
-        {votando
-          ? `${eu.nome}, o que você acha que vem aí?`
-          : `Palpite anotado, ${eu.nome}! Aguardando a revelação…`}
-        {!votando && <button onClick={aoTrocar}>trocar palpite</button>}
+        {fraseDaFaixa(eu, votando)}
+        {votando && aoVoltar && <button onClick={aoVoltar}>cancelar</button>}
+        {eu.palpite && <button onClick={aoTrocar}>trocar palpite</button>}
         {/* Crianças e quem está sem celular votam pelo aparelho de outra pessoa. */}
         {!votando && (
           <button onClick={aoOutraPessoa}>votar por outra pessoa</button>
@@ -308,7 +325,7 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
       () => null,
     );
     await recarregar();
-    if (resposta?.ok) salvarEu({ ...eu, palpite });
+    if (resposta?.ok) salvarEu({ ...eu, palpite, anterior: undefined });
     const motivo =
       resposta?.status === 409
         ? "Esse nome já está em uso. Recarregue a página e use outro."
@@ -325,12 +342,14 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
   if (!estado) return <main className="cha-entrada">Carregando…</main>;
   if (contagem > 0) return <Suspense contagem={contagem} />;
   if (estado.resultado) return <Revelacao {...estado} eu={eu} />;
-  if (!eu.nome) {
+  const voltar = () => salvarEu(eu.anterior ?? ESPECTADOR);
+  if (!eu.nome && !eu.espectador) {
     return (
       <Entrada
         palpites={estado.palpites}
+        aoVoltar={voltar}
         aoEntrar={(dados) =>
-          salvarEu({ ...EU_VAZIO, ...dados, segredo: crypto.randomUUID() })
+          salvarEu({ ...eu, ...dados, segredo: crypto.randomUUID() })
         }
       />
     );
@@ -347,7 +366,10 @@ function TelaDoCha({ estado, eu, salvarEu, recarregar }) {
         eu={eu}
         aoEscolher={apostar}
         aoTrocar={() => salvarEu({ ...eu, palpite: null })}
-        aoOutraPessoa={() => salvarEu(EU_VAZIO)}
+        aoVoltar={eu.anterior ? voltar : null}
+        aoOutraPessoa={() =>
+          salvarEu({ ...EU_VAZIO, anterior: { ...eu, anterior: undefined } })
+        }
       />
     </>
   );

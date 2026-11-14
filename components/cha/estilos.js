@@ -31,6 +31,7 @@ body { margin: 0; }
 .cha-passos { margin: 1rem 0 0; padding: 0.7rem 1rem; border-radius: 12px; background: #f3e6d2; }
 .cha-dica { margin: 0; font-size: 0.9rem; }
 .cha-entrada input::placeholder { color: #8a8490; }
+.cha-voltar { width: 100%; margin-top: 0.5rem; padding: 1rem; background: none; border: 0; color: inherit; text-decoration: underline; }
 .cha-aviso { color: #8f2a00; font-size: 0.9rem; margin: 0; }
 .cha-erro { background: var(--sol); text-align: center; padding: 0.5rem; }
 
